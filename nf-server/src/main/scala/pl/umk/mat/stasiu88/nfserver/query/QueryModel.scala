@@ -3,15 +3,10 @@
  * This software is licenced under European Union Public Licence v.1.1 or later
  */
 
-package pl.umk.mat.stasiu88.nfserver
+package pl.umk.mat.stasiu88.nfserver.query
 
-object Main {
+import pl.umk.mat.stasiu88.nfserver._
 
-  /**
-   * @param args the command line arguments
-   */
-  def main(args: Array[String]): Unit = {
-
-  }
+trait QueryModel {
 
 }

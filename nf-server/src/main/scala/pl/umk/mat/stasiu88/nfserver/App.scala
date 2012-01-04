@@ -4,7 +4,7 @@ package pl.umk.mat.stasiu88.nfserver
  *
  */
 object App {
-  var x:Flow = null
-  
-  def main(args:Array[String]) = println( "Hello World!" )
+  var x: Flow = null
+
+  def main(args: Array[String]) = println("Hello World!")
 }

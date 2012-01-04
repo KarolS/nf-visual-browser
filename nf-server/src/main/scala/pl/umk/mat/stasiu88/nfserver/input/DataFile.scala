@@ -10,7 +10,7 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.IOException
 
-class DataFile(fileName:String) {
+class DataFile(fileName: String) {
   private val files = new BufferedInputStream(new FileInputStream(new File(fileName)))
   private val stream = ByteStream.callibrate16(files, 0xA50C)
   stream.get16() //?
@@ -24,13 +24,13 @@ class DataFile(fileName:String) {
   private var lastSeen = 0
   private var firstSeenMs = 0
   private var lastSeenMs = 0
-  if(extendedStats == false){
-	flowCount = stream.get64()
-	stream.skip64(14)
-	firstSeen = stream.get32()
-	lastSeen = stream.get32()
-	firstSeenMs = stream.get16()
-	lastSeenMs = stream.get16()
-	stream.skip32()
-  } 
+  if (extendedStats == false) {
+    flowCount = stream.get64()
+    stream.skip64(14)
+    firstSeen = stream.get32()
+    lastSeen = stream.get32()
+    firstSeenMs = stream.get16()
+    lastSeenMs = stream.get16()
+    stream.skip32()
+  }
 }

@@ -6,13 +6,14 @@
 package pl.umk.mat.stasiu88.nfserver.dummy
 
 import pl.umk.mat.stasiu88.nfserver._
+import Protocols._
 import scala.util.Random
 
 object RandomFlowData {
 
 }
 
-class RandomFlowData (
+class RandomFlowData(
   val localSubnet: IP4Addr,
   val subnetSize: Int,
   val startTime: Long,
@@ -21,35 +22,42 @@ class RandomFlowData (
   val maxFlowPacketCount: Int,
   val maxBytesPerPacket: Int,
   val popularTcpPorts: List[Int],
-  val random: Random
-) {
+  val random: Random) {
   def randomLowTcpPort = popularTcpPorts(random.nextInt(popularTcpPorts.length))
-  def randomHighPort = random.nextInt(0x10000)+0x10000
+  def randomHighPort = random.nextInt(0x10000) + 0x10000
 
   def next: Set[Flow] = {
-	val local = random.nextBoolean
-	var src = IP4Addr(localSubnet.value + random.nextInt(subnetSize) + 1)
-	var dst = if (local) IP4Addr(localSubnet.value + random.nextInt(subnetSize) + 1)
-	  else IP4Addr(0x0B000000 + random.nextInt(0x70000000))
-	val stime = startTime + random.nextInt(measurementDuration)
-	val duration = 1+random.nextInt(maxFlowDuration)
-	val packetCount = 1+random.nextInt(maxFlowPacketCount)
-	val flowBytes1 = 1 + packetCount + random.nextInt(packetCount*maxBytesPerPacket)
-	val flowBytes2 = 1 + packetCount + random.nextInt(packetCount*maxBytesPerPacket)
-	val (sport,dport) = if (random.nextBoolean) (randomLowTcpPort, randomHighPort)
-	else (randomHighPort, randomLowTcpPort)
-	Set(
-	  new Flow(stime, stime+duration, flowBytes1, packetCount, src, dst, sport, dport),
-	  new Flow(stime+duration, stime+2*duration, flowBytes2, packetCount, dst, src, dport, sport)
-	)
+    val local = random.nextBoolean
+    var src = IP4Addr(localSubnet.value + random.nextInt(subnetSize) + 1)
+    var dst = if (local) IP4Addr(localSubnet.value + random.nextInt(subnetSize) + 1)
+    else IP4Addr(0x0B000000 + random.nextInt(0x70000000))
+    val stime = startTime + random.nextInt(measurementDuration)
+    val duration = 1 + random.nextInt(maxFlowDuration)
+    val packetCount = 1 + random.nextInt(maxFlowPacketCount)
+    val flowBytes1 = 1 + packetCount + random.nextInt(packetCount * maxBytesPerPacket)
+    val flowBytes2 = 1 + packetCount + random.nextInt(packetCount * maxBytesPerPacket)
+    val (sport, dport) = if (random.nextBoolean) (randomLowTcpPort, randomHighPort)
+    else (randomHighPort, randomLowTcpPort)
+    Set(
+      new Flow(src, dst, dst, 
+          1, 1, 
+          packetCount, flowBytes1, 
+          stime, stime + duration, 
+          sport, dport, 0, TCP, 0, 0, 0),
+      new Flow(dst, src, src, 
+          1, 1, 
+          packetCount, flowBytes2, 
+          stime + duration, stime + 2 * duration, 
+          dport, sport, 0, TCP, 0, 0, 0)
+    )
   }
   def stream: Stream[Flow] = {
-	var result:Stream[Flow] = null
-	val n = next
-	for(f<-n){
-	  if(null eq result) result = Stream.cons(f,stream)
-	  else result = Stream.cons(f,result)
-	}
-	result
+    var result: Stream[Flow] = null
+    val n = next
+    for (f <- n) {
+      if (null eq result) result = Stream.cons(f, stream)
+      else result = Stream.cons(f, result)
+    }
+    result
   }
 }
