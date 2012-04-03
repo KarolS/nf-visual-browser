@@ -5,25 +5,35 @@
 
 package pl.umk.mat.stasiu88.nfserver
 
-final class Flow(
-  val srcaddr: Addr,
-  val destaddr: Addr,
-  val nextHop: Addr,
-  val inputInterface: Int,
-  val outputInterface: Int,
-  val packets: Long,
-  val bytes: Long,
-  val startTime: Long,
-  val endTime: Long,
-  val srcport: Int,
-  val destport: Int,
-  val tcpFlags: Byte,
-  val protocol: Int,
-  val tos: Byte,
-  val srcAS: Int,
-  val destAS: Int
-  ) {
+import org.joda.time.Instant
 
+final class Flow(
+  var srcaddr: Addr = IP4Addr.ZERO,
+  var destaddr: Addr = IP4Addr.ZERO,
+  var nextHop: Addr = IP4Addr.ZERO,
+  var inputInterface: Int = 0,
+  var outputInterface: Int = 0,
+  var packets: Long = 0,
+  var bytes: Long = 0,
+  var startTime: Long = 0,
+  var endTime: Long = 0,
+  var srcport: Int = 0,
+  var destport: Int = 0,
+  var tcpFlags: Int = 0,
+  var protocol: Int = 0,
+  var tos: Byte = 0,
+  var srcAS: Int = 0,
+  var destAS: Int = 0
+  ) {
+  override def toString() = (
+    Protocols.name(protocol) + " " +
+    srcaddr + ":"+srcport + " -> " +
+    destaddr + ":" + destport + " " +
+    new Instant(startTime) + " - " +
+    new Instant(endTime) + " " +
+    bytes + "B " +
+    packets + " packets"
+  ) 
 }
 
 abstract class Addr {
@@ -36,14 +46,19 @@ object Addr {
     case IPV4REGEX() => IP4Addr(string)
   }
 }
-case class IP4Addr(val value: Int) extends Addr {
+case class IP4Addr(value: Int) extends Addr {
   override def toString = {
     "%d.%d.%d.%d" format ((value >>> 24) & 255, (value >>> 16) & 255,
       (value >>> 8) & 255, (value & 255))
   }
   def toIntList = List(4, value)
 }
+case class IP6Addr(part0: Long, part1: Long) extends Addr {
+  def toIntList = List(6, (part0>>>32).toInt, (part0).toInt, (part1>>>32).toInt, (part1).toInt)
+}
 object IP4Addr {
+  val ZERO = IP4Addr("0.0.0.0") 
+  val LOCALHOST = IP4Addr("127.0.0.1") 
   def apply(string: String): IP4Addr = {
     val parts = string.split("""\.""")
     if (parts.length != 4) throw new NumberFormatException
@@ -51,6 +66,10 @@ object IP4Addr {
     if (intparts exists { x => x < 0 || x > 255 }) throw new NumberFormatException
     new IP4Addr((0 /: intparts){ _ * 256 + _ })
   }
+}
+object IP6Addr {
+  val ZERO = new IP6Addr(0L, 0L) 
+  val LOCALHOST = new IP6Addr(0L, 1L) 
 }
 abstract class Subnet extends Function1[Addr, Boolean] {
   def toIntList: List[Int]

@@ -6,7 +6,14 @@
 package pl.umk.mat.stasiu88.nfserver.query
 
 import pl.umk.mat.stasiu88.nfserver._
-
-trait QueryModel {
-
+import scalaz._
+import Scalaz._
+object QueryModel {
+  implicit def PeriodEq: Equal[Period] = equalA
+  implicit def SummableEq: Equal[Summable] = equalA
+  implicit def IndexingEq: Equal[Indexing] = equalA
+  implicit def StatisticEq: Equal[Statistic] = equalBy{s=>(s.backupPeriod,s.sumOver,s.indexing,s.top)}
+  implicit def SplitFilterEq: Equal[SplitFilter] = equalA
+  implicit def FilterEq: Equal[Filter] = equalA
+ 
 }

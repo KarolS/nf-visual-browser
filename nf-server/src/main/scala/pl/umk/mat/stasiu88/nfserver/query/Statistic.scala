@@ -8,6 +8,8 @@ import pl.umk.mat.stasiu88.nfserver._
 import Protocols._
 import scalaz._
 import Scalaz._
+import org.joda.time._
+import org.joda.time.format.DateTimeFormat
 
 class Statistic(val sumOver: List[Summable],
                 val indexing: Indexing,
@@ -15,32 +17,38 @@ class Statistic(val sumOver: List[Summable],
                 var period: Period) {
   val backupPeriod = period
 
+  override def toString() = {
+    "Sum " + sumOver.mkString("[",",","]") + 
+      ", get top " + top + "" +
+      " grouping by (" + indexing + 
+      "), for " + period
+  }
 }
 
 sealed trait Indexing {
-  def apply(f: Flow): List[List[Int]]
-  def decode(index: List[Int]): (String, List[Int])
+  def apply(q:Query, f: Flow): List[List[Int]]
+  def decode(q:Query, index: List[Int]): (String, List[Int])
 }
 
 abstract class IPIndexing extends Indexing {
-  def decode(index: List[Int]) = index match {
+  def decode(q:Query, index: List[Int]) = index match {
     case 0 :: 4 :: ip :: xs => "from " + IP4Addr(ip).toString -> xs
     case 1 :: 4 :: ip :: xs => "to " + IP4Addr(ip).toString -> xs
   }
 }
 
-object SrcIPIndex extends IPIndexing {
-  def apply(f: Flow) = List(0 :: f.srcaddr.toIntList)
+case object SrcIPIndex extends IPIndexing {
+  def apply(q:Query, f: Flow) = List(0 :: f.srcaddr.toIntList)
 
 }
-object DestIPIndex extends IPIndexing {
-  def apply(f: Flow) = List(1 :: f.destaddr.toIntList)
+case object DestIPIndex extends IPIndexing {
+  def apply(q:Query, f: Flow) = List(1 :: f.destaddr.toIntList)
 }
-object AnyIPIndex extends IPIndexing {
-  def apply(f: Flow) = List(0 :: f.srcaddr.toIntList, 1 :: f.destaddr.toIntList)
+case object AnyIPIndex extends IPIndexing {
+  def apply(q:Query, f: Flow) = List(0 :: f.srcaddr.toIntList, 1 :: f.destaddr.toIntList)
 }
-class IPInSubnetIndex(subnet: Subnet) extends IPIndexing {
-  def apply(f: Flow) = if (f.srcaddr ~ subnet) {
+case class IPInSubnetIndex(subnet: Subnet) extends IPIndexing {
+  def apply(q:Query, f: Flow) = if (f.srcaddr ~ subnet) {
     if (f.destaddr ~ subnet) List(0 :: f.srcaddr.toIntList, 1 :: f.destaddr.toIntList)
     else List(0 :: f.srcaddr.toIntList)
   } else {
@@ -48,8 +56,8 @@ class IPInSubnetIndex(subnet: Subnet) extends IPIndexing {
     else List()
   }
 }
-class IPNotInSubnetIndex(subnet: Subnet) extends IPIndexing {
-  def apply(f: Flow) = if (f.srcaddr ~ subnet) {
+case class IPNotInSubnetIndex(subnet: Subnet) extends IPIndexing {
+  def apply(q:Query, f: Flow) = if (f.srcaddr ~ subnet) {
     if (f.destaddr ~ subnet) List()
     else List(1 :: f.destaddr.toIntList)
   } else {
@@ -59,67 +67,176 @@ class IPNotInSubnetIndex(subnet: Subnet) extends IPIndexing {
 }
 
 sealed trait ListOfIndexing extends Indexing
-object NilIndex extends ListOfIndexing {
-  def apply(f: Flow) = List(List())
-  def decode(index: List[Int]) = "" -> index
+case object NilIndex extends ListOfIndexing {
+  def apply(q:Query, f: Flow) = List(List())
+  def decode(q:Query, index: List[Int]) = "" -> index
+  override def toString() = "()"
 }
-class ConsIndex(head: Indexing, tail: ListOfIndexing) extends ListOfIndexing {
-  def apply(f: Flow) = head(f) |@| tail(f) apply { _ ++ _ }
-  def decode(index: List[Int]) = {
-    val (headDecoded, rest1) = head.decode(index)
-    val (tailDecoded, rest2) = tail.decode(rest1)
+case class ConsIndex(head: Indexing, tail: ListOfIndexing) extends ListOfIndexing {
+  def apply(q:Query, f: Flow) = head(q,f) |@| tail(q,f) apply { _ ++ _ }
+  def decode(q:Query, index: List[Int]) = {
+    val (headDecoded, rest1) = head.decode(q, index)
+    val (tailDecoded, rest2) = tail.decode(q, rest1)
     (headDecoded + " " + tailDecoded, rest2)
   }
+  override def toString() = head + ", " + tail
 }
 
-object PortIndex extends Indexing {
-  def apply(f: Flow) =
-    if (f.protocol == TCP || f.protocol == UDP) List(List(0, f.srcport), List(1, f.destport))
-    else List(List(2))
-  def decode(index: List[Int]) = index match {
+abstract class PortIndexing extends Indexing {
+  def decode(q:Query, index: List[Int]) = index match {
     case 2 :: xs      => "no port" -> xs
     case 0 :: p :: xs => "from port " + p -> xs
     case 1 :: p :: xs => "to port " + p -> xs
   }
 }
-object ProtocolIndex extends Indexing {
-  def apply(f: Flow) = List(List(f.protocol))
-  def decode(index: List[Int]) = ("proto " + index.head, index.tail)
+case object AnyPortIndex extends PortIndexing {
+  def apply(q:Query, f: Flow) =
+    if (f.protocol == TCP || f.protocol == UDP) List(List(0, f.srcport), List(1, f.destport))
+    else List(List(2))
 }
-object IPVersionIndex extends Indexing {
-  def apply(f: Flow) = List(List(f.srcaddr match {
+case class PortInRangeIndex(range:(Int,Int)) extends PortIndexing {
+  def apply(q:Query, f: Flow):List[List[Int]] = {
+    if (f.protocol == TCP || f.protocol == UDP){
+      if(f.srcport>=range._1 && f.srcport<=range._2){
+        if(f.destport>=range._1 && f.destport<=range._2)
+          return List(List(0, f.srcport), List(1, f.destport))
+        else
+          return List(List(0, f.srcport))
+      }
+      else{
+        if(f.destport>=range._1 && f.destport<=range._2)
+          return List(List(1, f.destport))
+        else
+          return List()
+      }
+    }
+    return List(List(2))
+  }
+}
+case object SrcPortIndex extends PortIndexing {
+  def apply(q:Query, f: Flow) =
+    if (f.protocol == TCP || f.protocol == UDP) List(List(0, f.srcport))
+    else List(List(2))
+}
+case object DestPortIndex extends PortIndexing {
+  def apply(q:Query, f: Flow) =
+    if (f.protocol == TCP || f.protocol == UDP) List(List(1, f.destport))
+    else List(List(2))
+}
+case object ProtocolIndex extends Indexing {
+  def apply(q:Query, f: Flow) = List(List(f.protocol))
+  def decode(q:Query, index: List[Int]) = ("proto " + index.head, index.tail)
+}
+case object IPVersionIndex extends Indexing {
+  def apply(q:Query, f: Flow) = List(List(f.srcaddr match {
     case _: IP4Addr => 4
   }))
-  def decode(index: List[Int]) = ("ipv" + index.head, index.tail)
+  def decode(q:Query, index: List[Int]) = ("ipv" + index.head, index.tail)
 }
 sealed trait Summable {
   def apply(f: Flow): Long //TODO: a może BigInt?
 }
-object Bytes extends Summable {
+case object Bytes extends Summable {
   def apply(f: Flow) = f.bytes
 }
-object Packets extends Summable {
+case object Packets extends Summable {
   def apply(f: Flow) = f.packets
 }
-object Flows extends Summable {
+case object Flows extends Summable {
   def apply(f: Flow) = 1
 }
-object Duration extends Summable {
+case object Duration extends Summable {
   def apply(f: Flow) = f.endTime - f.startTime
 }
 
 sealed trait Period {
-  def apply(f: Flow): Long
+  val DOW = Array("SUN","MON","TUE","WED","THU","FRI","SAT","SUN")
+  val EPOCH = new Instant(0L)
+  def apply(q:Query, f: Flow): Long
   def decode(index: Long): String
 }
 
-class CheatingPeriod(val constant: Long, val decodeConstant: String) extends Period {
-  def apply(f: Flow) = constant
+case class CheatingPeriod(constant: Long, decodeConstant: String) extends Period {
+  def apply(q:Query, f: Flow) = constant
   def decode(index: Long) = decodeConstant
 }
 
-object Always extends Period {
-  def apply(f: Flow) = 0
-  def decode(index: Long) = ""
+case object EachAlways extends Period {
+  def apply(q:Query, f: Flow) = 0L
+  def decode(index: Long) = "all time"
 }
+
+case object EachMinute extends Period {
+  val FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm")
+  def apply(q:Query, f: Flow) = f.endTime / 60000L
+  def decode(index: Long) = new DateTime(EPOCH.plus(index * (60*1000))).toString(FORMAT)
+}
+
+case object EachHour extends Period {
+  val FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH")
+  def apply(q:Query, f: Flow) = 
+    Hours.hoursBetween(EPOCH, new Instant(f.endTime)).getHours().toLong
+    
+  def decode(index: Long) = new DateTime(EPOCH.plus(index * (3600*1000))).toString(FORMAT)
+}
+
+case object EachDay extends Period {
+  val FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd")
+  def apply(q:Query, f: Flow) = 
+    new DateTime(f.endTime, q.timeZone).dayOfMonth().roundFloorCopy().getMillis() / (24L*3600*1000)
+    
+  def decode(index: Long) = new DateTime(EPOCH.plus(index * (24L*3600*1000))).toString(FORMAT)
+}
+
+case object EachWeek extends Period {
+  val FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd")
+  def apply(q:Query, f: Flow) = 
+    new DateTime(f.endTime, q.timeZone).weekOfWeekyear().roundFloorCopy().getMillis() / (7*24L*3600*1000)
+  def decode(index: Long) = new DateTime(EPOCH.plus(index * (7*24L*3600*1000))).toString(FORMAT)
+}
+
+case object EachMonth extends Period {
+  def apply(q:Query, f: Flow) = {
+    val x = new DateTime(f.endTime, q.timeZone)
+    x.getYear()*12 + x.getMonthOfYear()
+  }
+  
+  def decode(index: Long) = {
+    val corr = index-1
+    val m = corr%12 +1
+    val y = corr/12
+    y+(if(m<10) "-0"+m else "-"+m)
+  }
+}
+
+case object EachYear extends Period {
+  def apply(q:Query, f: Flow) = 
+    new DateTime(f.endTime, q.timeZone).getYear()
+    
+  def decode(index: Long) = index.toString
+}
+
+case object EachDayOfWeek extends Period {
+  def apply(q:Query, f: Flow) = 
+    new DateTime(f.endTime, q.timeZone).getDayOfWeek()
+    
+  def decode(index: Long) = DOW(index.toInt)
+}
+
+case object EachHourOfDay extends Period {
+  def apply(q:Query, f: Flow) = 
+    new DateTime(f.endTime, q.timeZone).getHourOfDay()
+    
+  def decode(index: Long) = if(index<10) "0"+index else index.toString
+}
+
+case object EachHourOfWeek extends Period {
+  def apply(q:Query, f: Flow) = { 
+    val x = new DateTime(f.endTime, q.timeZone)
+    x.getHourOfDay() + 24*x.getDayOfWeek()
+  }
+  
+  def decode(index: Long) = DOW(index.toInt/24)+(if(index%24<10) "-0"+index%24 else "-"+index%24)
+}
+
 
