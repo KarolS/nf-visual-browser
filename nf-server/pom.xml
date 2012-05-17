@@ -1,75 +1,29 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>pl.umk.mat.stasiu88</groupId>
+	<groupId>pl.umk.mat.stasiu88.nf-clientserver</groupId>
 	<artifactId>nf-server</artifactId>
-	<version>1.0-SNAPSHOT</version>
 	<name>NfServer</name>
-	<inceptionYear>2008</inceptionYear>
-	<properties>
-		<scala.version>2.9.1</scala.version>
-		<scalatest.version>1.6.1</scalatest.version>
-	</properties>
-
+	
+	<parent>
+	    <groupId>pl.umk.mat.stasiu88</groupId>
+	    <artifactId>nf-clientserver</artifactId>
+	    <version>0.1-SNAPSHOT</version>
+	</parent>
+	
 	<repositories>
-		<repository>
-			<id>scala-tools.org</id>
-			<name>Scala-Tools Maven2 Repository</name>
-			<url>http://scala-tools.org/repo-releases</url>
-		</repository>
 		<repository>
 			<id>twitter.com</id>
 			<name>Twitter Maven2 Repository</name>
 			<url>http://maven.twttr.com</url>
 		</repository>
 	</repositories>
-
-	<pluginRepositories>
-		<pluginRepository>
-			<id>scala-tools.org</id>
-			<name>Scala-Tools Maven2 Repository</name>
-			<url>http://scala-tools.org/repo-releases</url>
-		</pluginRepository>
-	</pluginRepositories>
-
+	
 	<dependencies>
-		<dependency>
-			<groupId>org.scala-lang</groupId>
-			<artifactId>scala-library</artifactId>
-			<version>${scala.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.10</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.scalatest</groupId>
-			<artifactId>scalatest_${scala.version}</artifactId>
-			<version>${scalatest.version}</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.scalaz</groupId>
-			<artifactId>scalaz-core_${scala.version}</artifactId>
-			<version>6.0.3</version>
-		</dependency>
 		<dependency>
 			<groupId>org.eclipse.jetty</groupId>
 			<artifactId>jetty-server</artifactId>
 			<version>8.1.0.v20120127</version>
-		</dependency>
-		<dependency>
-			<groupId>joda-time</groupId>
-			<artifactId>joda-time</artifactId>
-			<version>2.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.joda</groupId>
-			<artifactId>joda-convert</artifactId>
-			<version>1.2</version>
-			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>com.twitter</groupId>
@@ -122,7 +76,25 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>appassembler-maven-plugin</artifactId>
-				<version>1.0</version>
+				<version>1.2</version>
+				<configuration>
+					<programs>
+						<program>
+							<mainClass>pl.umk.mat.stasiu88.nfserver.App</mainClass>
+							<name>nfserver</name>
+						</program>
+					</programs>
+					<platforms>
+						<platform>windows</platform>
+						<platform>unix</platform>
+					</platforms>
+					<repositoryLayout>flat</repositoryLayout>
+					<repositoryName>lib</repositoryName>
+					<configurationDirectory>conf</configurationDirectory>
+					<copyConfigurationDirectory>true</copyConfigurationDirectory>
+					<includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
+					<extraJvmArguments>-Xms1g</extraJvmArguments>
+				</configuration>
 				<executions>
 					<!--<execution> <id>generate-jsw-scripts</id> <phase>package</phase> 
 						<goals> <goal>generate-daemons</goal> </goals> <configuration> <daemons> 
@@ -136,24 +108,6 @@
 						<goals>
 							<goal>assemble</goal>
 						</goals>
-						<configuration>
-							<programs>
-								<program>
-									<mainClass>pl.umk.mat.stasiu88.nfserver.App</mainClass>
-									<name>nfserver</name>
-								</program>
-							</programs>
-							<platforms>
-								<platform>windows</platform>
-								<platform>unix</platform>
-							</platforms>
-							<repositoryLayout>flat</repositoryLayout>
-							<repositoryName>lib</repositoryName>
-							<configurationDirectory>conf</configurationDirectory>
-							<copyConfigurationDirectory>true</copyConfigurationDirectory>
-							<includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
-							<extraJvmArguments>-Xms1g</extraJvmArguments>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>

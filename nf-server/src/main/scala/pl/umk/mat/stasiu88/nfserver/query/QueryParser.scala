@@ -19,6 +19,7 @@ object TimeZoneFactory{
   }
   cache("utc") = DateTimeZone.UTC
   cache("z") = DateTimeZone.UTC
+  cache("default") = DateTimeZone.getDefault
   //TODO
   
   def apply(id: String):Option[DateTimeZone] = cache get id.toLowerCase
@@ -35,7 +36,7 @@ class QueryParser extends RegexParsers {
     
   def TIMEZONE_REGEX: Parser[String] = "[a-z/]+".r
   def timezone: Parser[DateTimeZone] = 
-    TIMEZONE_REGEX ^^ {id => TimeZoneFactory(id) getOrElse DateTimeZone.UTC} //TODO
+    TIMEZONE_REGEX ^^ {id => TimeZoneFactory(id) get } //TODO
   
   private def timezoneextractor(a: Option[Any~DateTimeZone]) = a match{
     case None => DateTimeZone.UTC
@@ -114,7 +115,7 @@ class QueryParser extends RegexParsers {
   def filterAtom: Parser[Filter] = "all" ^^^ AllFilter |
     "(" ~> filterExternal <~ ")" |
       ("~" | "!" | "not") ~> filterAtom ^^ { NotFilter(_) } |
-      ipfilter | portfilter | protocolfilter //TODO
+      ipfilter | portfilter | protocolfilter | hostnamefilter//TODO
 
   def ip: Parser[Addr] = Addr.IPV4REGEX ^^ { Addr(_) }
 
@@ -132,10 +133,25 @@ class QueryParser extends RegexParsers {
   def ipfilter: Parser[Filter] =
     ("ipv4" | "ip4") ^^^ IP4Filter |
       ("ipv6" | "ip6") ^^^ IP6Filter |
-      ipdesignation ~ ("=" |"eq"| "==") ~ ip ^^ { case d ~ _ ~ ip => IPEqualFilter(d, ip) } |
+      ipdesignation ~ ( "=="|"=" |"eq") ~ ip ^^ { case d ~ _ ~ ip => IPEqualFilter(d, ip) } |
       ipdesignation ~ ("!="|"ne") ~ ip ^^ { case d ~ _ ~ ip => NotFilter(IPEqualFilter(d, ip)) } |
       ipdesignation ~ "in" ~ subnet ^^ { case d ~ _ ~ sn => IPMaskFilter(d, sn) } |
       ipdesignation ~ ("notin" | "not" ~ "in") ~ subnet ^^ { case d ~ _ ~ sn => NotFilter(IPMaskFilter(d, sn)) }
+      
+  def hostnamedesignation: Parser[Designation[Addr]] =
+    "srchost" ^^^ SrcIpDesignation |
+      ("dsthost" | "desthost") ^^^ DstIpDesignation |
+      "bothhost" ^^^ BothIpDesignation |
+      "anyhost" ^^^ AnyIpDesignation
+
+  def hostname: Parser[Symbol] = """[-a-z0-9_]+(\.[-a-z0-9_]+)*""".r ^^ {Symbol(_)}
+  def domainname: Parser[Symbol] = """\.?[-a-z0-9_]+(\.[-a-z0-9_]+)*""".r ^^ {Symbol(_)}
+ 
+  def hostnamefilter: Parser[Filter] =
+      hostnamedesignation ~ ( "=="|"=" |"eq") ~ hostname ^^ { case d ~ _ ~ hn => HostEqualFilter(d, hn) } |
+      hostnamedesignation ~ ("!="|"ne") ~ hostname ^^ { case d ~ _ ~ hn => NotFilter(HostEqualFilter(d, hn)) } |
+      hostnamedesignation ~ "in" ~ domainname ^^ { case d ~ _ ~ dn => HostInDomainFilter(d, dn) } |
+      hostnamedesignation ~ ("notin" | "not" ~ "in") ~ domainname ^^ { case d ~ _ ~ dn => NotFilter(HostInDomainFilter(d, dn)) }
 
   def integer: Parser[Int] = """\d+""".r ^^ { _.toInt }
 
@@ -152,12 +168,12 @@ class QueryParser extends RegexParsers {
       "bothport" ^^^ BothIntDesignation
 
   def relationaloperator: Parser[Int => (Int => Boolean)] =
-    ("=" | "=="|"eq") ^^^ { (x: Int) => (y: Int) => x == y } |
-      ("!="|"ne") ^^^ { (x: Int) => (y: Int) => x != y } |
-      ("<="|"le") ^^^ { (x: Int) => (y: Int) => x <= y } |
-      ("<"|"lt") ^^^ { (x: Int) => (y: Int) => x < y } |
-      (">="|"ge") ^^^ { (x: Int) => (y: Int) => x >= y } |
-      (">"|"gt") ^^^ { (x: Int) => (y: Int) => x > y }
+    ("=="|"=" |"eq") ^^^ RelationalOperators.#==# |
+      ("!="|"ne") ^^^ RelationalOperators.#!=# |
+      ("<="|"le") ^^^ RelationalOperators.#<=# |
+      ("<"|"lt") ^^^ RelationalOperators.#<# |
+      (">="|"ge") ^^^ RelationalOperators.#>=# |
+      (">"|"gt") ^^^ RelationalOperators.#>#
 
   def portfilter: Parser[Filter] =
     portdesignation ~ relationaloperator ~ integer ^^ { case d ~ op ~ i => PortRelationalFilter(d, op, i) } |
@@ -207,10 +223,15 @@ class QueryParser extends RegexParsers {
       "srcport" ^^^ SrcPortIndex |
       ("dstport"|"destport") ^^^ DestPortIndex |
       ("protocol" | "proto") ^^^ ProtocolIndex |
-      "ipversion" ^^^ IPVersionIndex
+      "ipversion" ^^^ IPVersionIndex |
+      "host" ^^^ AnyHostnameIndex |
+      "srchost" ^^^ SrcHostnameIndex |
+      ("dsthost" | "desthost") ^^^ DestHostnameIndex |
+      "host" ~> "in" ~> domainname ^^ {new HostnameInDomainIndex(_)} |
+      "host" ~> ("notin" | "not"~"in") ~> domainname ^^ {new HostnameNotInDomainIndex(_)}
 
   def period: Parser[Period] =
-    ("alltime" | "always" | ("all" ~ "time")) ^^^ EachAlways |
+    ("alltime" | "always" | ("all" ~ "time") | "all") ^^^ EachAlways |
     "dayofweek" ^^^ EachDayOfWeek |
     "hourofday" ^^^ EachHourOfDay |
     "hourofweek" ^^^ EachHourOfWeek |
@@ -221,4 +242,31 @@ class QueryParser extends RegexParsers {
     "month" ^^^ EachMonth |
     "year" ^^^ EachYear
 
+}
+
+object RelationalOperators{
+  def #==# = new (Int=>(Int=>Boolean)){
+    override def toString = "="
+    def apply(i:Int) = i==_
+  }
+  def #!=# = new (Int=>(Int=>Boolean)){
+    override def toString = "!="
+    def apply(i:Int) = i!=_
+  }
+  def #<=# = new (Int=>(Int=>Boolean)){
+    override def toString = "<="
+    def apply(i:Int) = i<=_
+  }
+  def #>=# = new (Int=>(Int=>Boolean)){
+    override def toString = ">="
+    def apply(i:Int) = i>=_
+  }
+  def #<# = new (Int=>(Int=>Boolean)){
+    override def toString = "<"
+    def apply(i:Int) = i<_
+  }
+  def #># = new (Int=>(Int=>Boolean)){
+    override def toString = ">"
+    def apply(i:Int) = i>_
+  }
 }

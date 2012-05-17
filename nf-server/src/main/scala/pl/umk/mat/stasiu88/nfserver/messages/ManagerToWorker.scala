@@ -20,3 +20,4 @@ case class ReportJobProgress(
     id: Symbol,
     progress: Double
     )
+case object ShutdownWorker

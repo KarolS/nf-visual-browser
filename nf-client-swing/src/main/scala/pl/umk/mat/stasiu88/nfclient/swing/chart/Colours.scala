@@ -1,0 +1,114 @@
+package pl.umk.mat.stasiu88.nfclient.swing.chart
+
+import java.awt.Color
+import scala.collection.mutable.{Map=>MMap}
+import scala.math._
+
+object Colours {
+
+  private[this]val cache = MMap[Int, Color]().withDefault{ i =>
+    val hue = (i*100+10)%360
+    val v:Float = 0.5+0.4*(cos(Pi*i*0.8)) toFloat
+    val hue_prim = hue/60
+    val x:Float = v*(1.0 - abs((hue%120)/60.0 - 1.0)) toFloat ;
+    hue_prim match {
+      case 0 => new Color(v,x,0f)
+      case 1 => new Color(x,v,0f)
+      case 2 => new Color(0f,v,x)
+      case 3 => new Color(0f,x,v)
+      case 4 => new Color(x,0f,v)
+      case 5 => new Color(v,0f,x)
+      case _ => Color.GRAY
+    }
+  }
+  def apply(i: Int) = {
+    cache(i)
+  }
+  def inHex(i:Int) = {
+    val c = cache(i)
+    List(c.getRed,c.getGreen,c.getBlue).map{"%02x" format _}.foldLeft("")(_+_)
+  }
+}
+object DataUnit extends Enumeration{
+  type Unit = Value
+  val Bytes, Kilobytes, Megabytes, Gigabytes, 
+    Milliseconds, Seconds, Minutes, Hours, 
+    Packets, Flows = Value 
+  def size(u: Value): Long = u match{
+    case Kilobytes => 1024L
+    case Megabytes => 1024L*1024L
+    case Gigabytes => 1024L*1024L*1024L
+    case Seconds =>    1000L
+    case Minutes =>   60000L
+    case Hours   => 3600000L
+    case _ => 1L
+  }
+  def symbol(u: Value): String = u match {
+    case Bytes     => " B"
+    case Kilobytes => " KB"
+    case Megabytes => " MB"
+    case Gigabytes => " GB"
+    case Milliseconds =>
+                    " ms"
+    case Seconds => " s" 
+    case Minutes => " min"
+    case Hours   => " h"
+    case _ => ""
+  } 
+  def name(u: Value): String = u match {
+    case Bytes     => "Bytes"
+    case Kilobytes => "Kilobytes"
+    case Megabytes => "Megabytes"
+    case Gigabytes => "Gigabytes"
+    case Milliseconds =>
+                    "Milliseconds"
+    case Seconds => "Seconds" 
+    case Minutes => "Minutes"
+    case Hours   => "Hours"
+    case Packets => "Packets"
+    case Flows   => "Flows"
+    case _ => ""
+  } 
+}
+object DataType extends Enumeration{
+  type Unit = Value
+  val Bytes, Flows, Packets, Duration = Value 
+  def units(t: Value) = t match {
+    case Bytes => List(DataUnit.Bytes,DataUnit.Kilobytes,DataUnit.Megabytes,DataUnit.Gigabytes)
+    case Flows => List(DataUnit.Flows)
+    case Packets => List(DataUnit.Packets)
+    case Duration => List(DataUnit.Milliseconds,DataUnit.Seconds,DataUnit.Minutes,DataUnit.Hours)
+    case _ => List(DataUnit.Packets) //TODO: dumb safeguard
+  } 
+  def toString(t: Value) = t match {
+    case Bytes => "Bytes"
+    case Flows => "Flows"
+    case Packets => "Packets"
+    case Duration => "Duration"
+    case _ => "?"
+  }
+  
+  def pickScaleStep(typ: Value, scale: Double, stepHeightInPixels: Int) = {
+    val avUnits = typ match {
+      case Bytes => List(1L -> " B", 10L -> "0 B", 100L -> "00 B", 
+          1024L -> " KB", 10240L -> "0 KB", 102400L -> "00 KB", 
+          1024*1024L-> " MB", 1024*10240L -> "0 MB", 1024*102400L -> "00 MB",
+          1024*1024L*1024L -> " GB",1024*1024L*10240L -> "0 GB",1024*1024L*102400L -> "00 GB",
+          1024*1024L*1024*1024L -> " TB",1024*1024L*1024*10240L -> "0 TB")
+      case Duration => List(1L -> " ms", 10L -> "0 ms", 100L -> "00 ms", 
+          1000L -> " s", 10000L -> "0 s", 60000L -> " min", 600000L -> "0 min", 
+          3600000L -> " h", 36000000L -> "0 h")
+      case _ => List(1L -> "", 10L -> "0", 100L -> "00", 1000L -> "000",
+          10000L->"0000", 100000L->"00000",
+          1000000L->"Mi", 10000000L->"0Mi", 100000000L->"00Mi")
+    }
+    avUnits.minBy{
+      case (s, name) =>
+        abs(log(s*scale)-log(stepHeightInPixels))
+    }
+  }
+}
+case class UnitListItem(display: String, unit: DataUnit.Value){
+  override def toString = display
+}
+

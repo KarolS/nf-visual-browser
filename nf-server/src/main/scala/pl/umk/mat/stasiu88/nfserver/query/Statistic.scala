@@ -30,16 +30,66 @@ sealed trait Indexing {
   def decode(q:Query, index: List[Int]): (String, List[Int])
 }
 
+abstract class HostnameIndexing extends Indexing {
+  def decode(q:Query, index: List[Int]) = index match {
+    case 0 :: h :: xs => "from " + StringCache(h).name -> xs
+    case 1 :: h :: xs => "to " + StringCache(h).name -> xs
+  }
+}
+case object SrcHostnameIndex extends HostnameIndexing {
+  def apply(q:Query, f: Flow) = List(
+    List(0,StringCache(DnsCache.canonicalHostname(f.srcaddr)))
+  )
+}
+case object DestHostnameIndex extends HostnameIndexing {
+  def apply(q:Query, f: Flow) = List(
+    List(1,StringCache(DnsCache.canonicalHostname(f.destaddr)))
+  )
+}
+case object AnyHostnameIndex extends HostnameIndexing {
+  def apply(q:Query, f: Flow) = List(
+    List(0,StringCache(DnsCache.canonicalHostname(f.srcaddr))),
+    List(1,StringCache(DnsCache.canonicalHostname(f.destaddr)))
+  )
+}
+case class HostnameInDomainIndex(domain: Symbol) extends HostnameIndexing {
+  def apply(q:Query, f: Flow) = 
+    (DnsCache.inDomain(f.srcaddr, domain),
+        DnsCache.inDomain(f.destaddr,domain)) match {
+    case (false,false) =>
+      Nil
+    case (true,false) =>
+      SrcHostnameIndex(q,f)
+    case (true,true) =>
+      AnyHostnameIndex(q,f)
+    case (false,true) =>
+      DestHostnameIndex(q,f)
+  }
+}
+case class HostnameNotInDomainIndex(domain: Symbol) extends HostnameIndexing {
+  def apply(q:Query, f: Flow) = 
+    (! DnsCache.inDomain(f.srcaddr, domain),
+        ! DnsCache.inDomain(f.destaddr,domain)) match {
+    case (false,false) =>
+      Nil
+    case (true,false) =>
+      SrcHostnameIndex(q,f)
+    case (true,true) =>
+      AnyHostnameIndex(q,f)
+    case (false,true) =>
+      DestHostnameIndex(q,f)
+  }
+}
 abstract class IPIndexing extends Indexing {
   def decode(q:Query, index: List[Int]) = index match {
     case 0 :: 4 :: ip :: xs => "from " + IP4Addr(ip).toString -> xs
     case 1 :: 4 :: ip :: xs => "to " + IP4Addr(ip).toString -> xs
+    //TODO
   }
 }
 
 case object SrcIPIndex extends IPIndexing {
   def apply(q:Query, f: Flow) = List(0 :: f.srcaddr.toIntList)
-
 }
 case object DestIPIndex extends IPIndexing {
   def apply(q:Query, f: Flow) = List(1 :: f.destaddr.toIntList)
@@ -133,6 +183,11 @@ case object IPVersionIndex extends Indexing {
   }))
   def decode(q:Query, index: List[Int]) = ("ipv" + index.head, index.tail)
 }
+
+
+
+
+
 sealed trait Summable {
   def apply(f: Flow): Long //TODO: a może BigInt?
 }
@@ -189,10 +244,17 @@ case object EachDay extends Period {
 }
 
 case object EachWeek extends Period {
-  val FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd")
+  val FORMAT1 = DateTimeFormat.forPattern("yyyy-MM-dd")
+  val FORMAT2 = DateTimeFormat.forPattern("MM-dd")
   def apply(q:Query, f: Flow) = 
     new DateTime(f.endTime, q.timeZone).weekOfWeekyear().roundFloorCopy().getMillis() / (7*24L*3600*1000)
-  def decode(index: Long) = new DateTime(EPOCH.plus(index * (7*24L*3600*1000))).toString(FORMAT)
+  def decode(index: Long) = {
+    val d1 = new DateTime(EPOCH.plus(index * (7*24L*3600*1000))).toString(FORMAT1)
+    val d2 = new DateTime(
+      EPOCH.plus(index * (7*24L*3600*1000)).plus(org.joda.time.Duration.standardHours(6*24))
+    ).toString(FORMAT2)
+    d1+"/"+d2
+  }
 }
 
 case object EachMonth extends Period {

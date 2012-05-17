@@ -1,22 +1,23 @@
 package pl.umk.mat.stasiu88.nfserver.server
 import org.eclipse.jetty.server.Server
 import pl.umk.mat.stasiu88.nfserver.manager.Manager
+import pl.umk.mat.stasiu88.nfserver.manager.ManagerComponent
+import pl.umk.mat.stasiu88.nfserver.configuration.ConfigurationComponent
+import pl.umk.mat.stasiu88.nfserver.Logging
 
-class HttpServer(port:Int){
+trait HttpServer extends Logging{
+  this: ManagerComponent with ConfigurationComponent => 
 
-  val manager = {
-    val m = new Manager()
-    m.start()
-    m
-  }
-  val server = new Server(port)
+  val server = new Server(httpPort)
   server.setHandler(new HttpHandler(manager))
   
-  def start() {
+  def startServer() {
     server.start()
+    log_info("Server started")
   }
   
-  def stop() {
+  def stopServer() {
     server.stop()
+    log_info("Server stopped")
   }
 }

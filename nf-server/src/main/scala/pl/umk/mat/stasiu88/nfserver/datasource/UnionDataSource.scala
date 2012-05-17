@@ -8,12 +8,16 @@ class UnionDataSource(val sources: DataSource*) extends DataSource{
       source.foreach(q)(f)
     }
   }
-  override def getResult(q:Query, approxThreadCount:Int) = approxThreadCount match {
-    case 1 => getResultSingleThreaded(q)
+  override def getResult(q:Query, approxThreadCount:Int)(reportResult: Double=>Unit) = approxThreadCount match {
+    case 1 => getResultSingleThreaded(q)(reportResult: Double=>Unit)
     case x => 
       val thsPerSource = (approxThreadCount+sources.length-1)/sources.length
-      sources.par map { data => 
-        data.getResult(q, thsPerSource) 
+      val results = Array.fill(sources.length)(0.0)
+      (sources zipWithIndex).par map { case (data,idx) => 
+        data.getResult(q, thsPerSource){p=>
+          results(idx) = p
+          reportResult(results.sum/results.length)
+        }
       } reduce {_|+|_}
   }
 }

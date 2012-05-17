@@ -102,6 +102,10 @@ object IP4Subnet {
     new IP4Subnet(ip, mask)
   }
 }
+case class NamedSubnet(name:String) extends Subnet {
+  def apply(addr: Addr) = throw new IllegalStateException("Executing non-cleaned query")
+  def toIntList: List[Int] = throw new IllegalStateException("Executing non-cleaned query")
+}
 
 object SNMPInterface {
   

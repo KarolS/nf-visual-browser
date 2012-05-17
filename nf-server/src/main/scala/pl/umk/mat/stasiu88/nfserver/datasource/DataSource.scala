@@ -7,15 +7,19 @@ import pl.umk.mat.stasiu88.nfserver.worker.Result
 import pl.umk.mat.stasiu88.nfserver.query.Query
 import pl.umk.mat.stasiu88.nfserver.worker.MutableResult
 
+trait DataSourceComponent {
+  def dataSource: DataSource
+}
+
 trait DataSource {
   
   def foreach(query:Query)(f:Flow=>Unit):Unit
   
-  def getResult(q:Query, approxThreadCount: Int=8): Result = getResultSingleThreaded(q)
+  def getResult(q:Query, approxThreadCount: Int=8)(reportProgress: Double=>Unit): Result = getResultSingleThreaded(q)(reportProgress)
   
   def getQuickResult(q:Query): Option[Result]= None
   
-  def getResultSingleThreaded(q:Query): Result = {
+  def getResultSingleThreaded(q:Query)(reportProgress: Double=>Unit): Result = {
     getQuickResult(q) foreach { return _ }
     val result = new MutableResult(q.splitfilter.bucketCount, q.statistic.sumOver.length)
     foreach(q){ f=>
@@ -31,6 +35,8 @@ trait DataSource {
         }
       }
     }
-    result.freeze()
+    val frozenResult = result.freeze()
+    reportProgress(1.0)
+    frozenResult
   }
 }

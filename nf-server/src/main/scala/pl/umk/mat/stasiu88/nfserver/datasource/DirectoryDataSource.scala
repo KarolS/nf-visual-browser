@@ -52,9 +52,7 @@ class DirectoryDataSource(val dir:File) extends DataSource{
         toRemove += path
       }
     }
-    toRemove foreach { path =>
-      files -= path
-    }
+    files --= toRemove
     refreshDir(dir)
   }
   def foreach(q:Query)(f:Flow=>Unit){
@@ -63,13 +61,25 @@ class DirectoryDataSource(val dir:File) extends DataSource{
     }
   }
   
-  override def getResult(q:Query, approxThreadCount:Int) = approxThreadCount match {
-    case 1 => getResultSingleThreaded(q)
-    case x => 
-      val step1 = timed(files.values.par map { data => 
-        data.getResultSingleThreaded(q) 
-      })
-      val step2 = timed(step1 reduce {_|+|_}) 
-      step2
+  override def getResult(q:Query, approxThreadCount:Int)(reportProgress: Double=>Unit) = {
+    val result = approxThreadCount match {
+      case 1 => getResultSingleThreaded(q)(reportProgress)
+      case x => 
+        val step1 = timed{
+          val fileList = files.values.toList zipWithIndex
+          val results = Array.fill(fileList.length)(0.0)
+          (fileList).par map { case (data,idx) => 
+            data.getResultSingleThreaded(q){ p=>
+              results(idx) = p
+              reportProgress(0.9*results.sum/results.length)
+            }
+          }
+        }
+        val step2 = timed(step1 reduce {_|+|_}) 
+        step2
+    }
+    FileRangeCache.commit()
+    reportProgress(1.0)
+    result
   }
 }

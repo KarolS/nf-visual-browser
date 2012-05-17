@@ -44,9 +44,10 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
         }
       case "POST" =>
         target match {
+          case "/status" => respond(SC_ACCEPTED){ _ => "OK" }
           case "/new" => respond(SC_ACCEPTED){ params =>
             val username = params("username")(0)
-            val password = params("password")(0).toCharArray()
+            val password = params("password")(0)
             val query = params("query")(0)
             log_debug("New job request received")
             val reply = manager !? (1000,NewJob(query, Credentials(username,password))) getOrElse {
@@ -59,6 +60,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
             }
             reply match {
               case Accepted(id) => id.name
+              case ServerError(Some(error)) => error.getMessage
               case whr: WithHttpResponse => whr.httpResponse.toString
               case _ => "?"
             }
@@ -66,7 +68,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
           case "/get" => respond(SC_OK){ params =>
             log_debug("Get job request received")
             val username = params("username")(0)
-            val password = params("password")(0).toCharArray()
+            val password = params("password")(0)
             val id = Symbol(params("id")(0))
             val reply = manager !? (1000,GetJob(id, Credentials(username,password))) getOrElse {
               new WithHttpResponse{
@@ -78,6 +80,24 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
             }
             reply match {
               case Ok(result, originalQuery) => result.toXml(Query(originalQuery)).toString
+              case PartialContent(progress) => progress.toString
+              case ServerError(Some(error)) => error.getMessage
+              case whr: WithHttpResponse => whr.httpResponse.toString
+              case _ => "?"
+            }
+          }
+          case "/cancel" => respond(SC_ACCEPTED){ params =>
+            log_debug("Cancel job request received")
+            val username = params("username")(0)
+            val password = params("password")(0)
+            val id = Symbol(params("id")(0))
+            val reply = manager !? (1000,HCancelJob(id, Credentials(username,password))) getOrElse GatewayTimeout
+            reply match {
+              case whr: WithHttpResponse => response.setStatus(whr.httpResponse)
+            }
+            reply match {
+              case Accepted(id) => id.name
+              case ServerError(Some(error)) => error.getMessage
               case whr: WithHttpResponse => whr.httpResponse.toString
               case _ => "?"
             }
@@ -108,7 +128,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
                 Filter: {q.splitfilter}<br/>
                 Statistics: {q.statistic}<br/>
                 <pre>{
-                  new RandomDataSource(300).getResult(q).toXml(q).toString
+                  new RandomDataSource(300).getResult(q){_=>()}.toXml(q).toString
                 }</pre>
               </body>
             </html>

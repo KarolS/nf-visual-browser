@@ -14,10 +14,10 @@ object ReadingAttempt {
     
     val q = Query("20120101000000-20120131000000;;all;bytes")
     timing{
-      directory.getResult(q)
+      directory.getResult(q){_=>}
     }
     timing{
-      directory.getResult(q)
+      directory.getResult(q){_=>}
     }
   }
 

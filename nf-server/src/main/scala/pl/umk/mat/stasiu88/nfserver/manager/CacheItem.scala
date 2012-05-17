@@ -33,5 +33,5 @@ class CacheItem(
     var progress: Double = 0.0
     ) {
   def isFinished = result.isDefined
-  def tryToCancel = ()
+  def tryToCancel = () //TODO
 }

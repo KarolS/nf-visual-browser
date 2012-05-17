@@ -5,9 +5,9 @@ object Protocols {
   val UDP = 17
   val ICMP = 1
   def name(id: Int) = id match{
-    case 6 => "tcp"
-    case 17 => "udp"
-    case 1 => "icmp"
-    case x => "proto="+x 
+    case 6 => "TCP"
+    case 17 => "UDP"
+    case 1 => "ICMP"
+    case x => "protocol "+x 
   }
 }

@@ -6,6 +6,7 @@
 package pl.umk.mat.stasiu88.nfserver.query
 
 import pl.umk.mat.stasiu88.nfserver.Flow
+import pl.umk.mat.stasiu88.nfserver.Subnet
 import scalaz._
 import Scalaz._
 
@@ -13,6 +14,7 @@ object SplittingResults extends Enumeration {
   type SplittingResult = Value
   val ACCEPTED, REJECTED, IGNORED = Value
 }
+
 import SplittingResults._
 
 sealed trait SplitFilter {
@@ -29,6 +31,11 @@ sealed trait SplitFilter {
     case CartesianProductSplitFilter(xs) => CartesianProductSplitFilter(this :: xs)
     case _                               => CartesianProductSplitFilter(List(this, that))
   }
+  def replaceSubnets(subnets: Map[String, Subnet]): SplitFilter
+  
+  protected var fname:String=""
+  def name(prefix: String): String
+  def getNameForBucket(i: Int): Option[String]
 }
 case class NodeSplitFilter(filter: Filter, ruleset: List[SplitFilter]) extends SplitFilter {
   require(ruleset.length > 0)
@@ -55,6 +62,24 @@ case class NodeSplitFilter(filter: Filter, ruleset: List[SplitFilter]) extends S
       return REJECTED
     } else return IGNORED
   }
+  def replaceSubnets(subnets: Map[String, Subnet]) = NodeSplitFilter(
+    filter.replaceSubnets(subnets),
+    ruleset map {_ replaceSubnets subnets}
+  )
+  def name(prefix: String) = {
+    fname = if(prefix=="") filter.toString else if (filter == AllFilter) prefix else prefix+", "+filter
+    var p = prefix
+    for(r<-ruleset){
+      p = r.name(p)
+    }
+    filter match {
+      case NotFilter(f) =>
+        if(prefix=="") f.toString else prefix+", "+f
+      case _ =>
+        if(prefix=="") "not "+filter.toString else prefix+", not "+filter
+    }
+  }
+  def getNameForBucket(i:Int) = if(i>=bucket && i<bucket+bucketCount) ruleset.map{_ getNameForBucket i}.foldl(none[String])(_|+|_) else None
 }
 case class LeafSplitFilter(filter: Filter) extends SplitFilter {
 
@@ -71,6 +96,21 @@ case class LeafSplitFilter(filter: Filter) extends SplitFilter {
       callback(bucket, flow)
       ACCEPTED
     } else IGNORED
+    
+  def replaceSubnets(subnets: Map[String, Subnet]) = LeafSplitFilter(
+    filter.replaceSubnets(subnets)
+  )
+  
+  def name(prefix: String) =  {
+    fname = if(prefix=="") filter.toString else if (filter == AllFilter) prefix else prefix+", "+filter
+    filter match {
+      case NotFilter(f) =>
+        if(prefix=="") f.toString else prefix+", "+f
+      case _ =>
+        if(prefix=="") "not "+filter.toString else prefix+", not "+filter
+    }
+  }
+  def getNameForBucket(i:Int) = if(i==bucket) Some(fname) else None
 }
 
 case class CartesianProductSplitFilter(filters: List[SplitFilter]) extends SplitFilter {
@@ -102,4 +142,18 @@ case class CartesianProductSplitFilter(filters: List[SplitFilter]) extends Split
   }
 
   override def toString() = filters.mkString(" * ")
+  
+  def replaceSubnets(subnets: Map[String, Subnet]) = CartesianProductSplitFilter(
+    filters map {_ replaceSubnets subnets}
+  )
+  
+  def name(prefix: String) =  {
+    fname = prefix
+    filters foreach {
+      _.name("")
+    }
+    "not "+prefix
+  }
+  def getNameForBucket(i:Int) = Some("UNSPECIFIED BUCKET")
+  
 }

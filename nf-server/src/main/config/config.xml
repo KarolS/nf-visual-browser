@@ -1,2 +1,5 @@
 <config>
+    <port>8888</port>
+    <datasource><random/></datasource>
+    <authzsource><allow-all/></authzsource>
 </config>

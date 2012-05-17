@@ -20,24 +20,36 @@ class FileDataSource(val file: File) extends DataSource{
   private[this]var vfirstSeen = Long.MinValue
   @volatile
   private[this]var vlastSeen = Long.MaxValue
+  
+  try {
+    val tmp = FileRangeCache.get(filename)
+    vfirstSeen=tmp._1
+    vlastSeen = tmp._2
+  } catch {
+    case _=> //IGNORE IT!
+  }
+  
   @volatile
   private[this]var read = false
   @volatile
   private[this]var assumeValid = true
+  
   def firstSeen = vfirstSeen
   def lastSeen = vlastSeen
   
   private def readHeader(q:Query):Option[DataFile]={
-    if(assumeValid && !read && q.timeWindow.overlapsWith(firstSeen,lastSeen)){
+    if(assumeValid && q.timeWindow.overlapsWith(firstSeen,lastSeen)){
       synchronized {
         try{
           val data = new DataFile(filename)
           val vfirstSeen = data.firstSeen
           val vlastSeen = data.lastSeen
+          FileRangeCache.update(filename, firstSeen, lastSeen)
           read = true
           return Some(data)
         }catch{
-          case _ =>
+          case e:Exception =>
+            e.printStackTrace()
             assumeValid = false
             return None
         }
@@ -45,6 +57,12 @@ class FileDataSource(val file: File) extends DataSource{
     }
     None
   }
+  
+  val allacceptingFilters = Set[SplitFilter](
+      LeafSplitFilter(AllFilter),
+      NodeSplitFilter(AllFilter,List(LeafSplitFilter(AllFilter)))
+      )
+      
   override def getQuickResult(q:Query):Option[Result]={
     //TODO: optimize for pure TCP/UDP/ICMP queries
     val data = readHeader(q) match {
@@ -53,7 +71,7 @@ class FileDataSource(val file: File) extends DataSource{
     }
     if(!assumeValid) return None
     if(!q.timeWindow.contains(firstSeen,lastSeen)) return None
-    if(q.splitfilter /== LeafSplitFilter(AllFilter)) return None
+    if(!allacceptingFilters.contains(q.splitfilter)) return None
     if(q.statistic.backupPeriod /== EachAlways) return None
     if(q.statistic.indexing /== NilIndex) return None
     q.statistic.sumOver foreach{ 
@@ -73,7 +91,9 @@ class FileDataSource(val file: File) extends DataSource{
         case _ => return None
       }:_*), 1, q.statistic.sumOver.length))
     } catch {
-      case e => None
+      case e:Exception =>
+        e.printStackTrace()
+        None
     }
     finally{
       try{

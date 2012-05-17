@@ -71,8 +71,15 @@ class Query(
     val timeWindow: TimeWindow,
     val timeZone: DateTimeZone,
     val subnets: Map[String,Subnet],
-    val splitfilter: SplitFilter,
+    non_pure_splitfilter: SplitFilter,
     val statistic: Statistic
     ){
-
+  
+  val splitfilter = non_pure_splitfilter.replaceSubnets(subnets)
+  splitfilter.bucketNo = 0
+  
+  splitfilter.name("")
+  
+  def clipSize = statistic.top
+  def needsClipping = statistic.indexing != NilIndex
 }

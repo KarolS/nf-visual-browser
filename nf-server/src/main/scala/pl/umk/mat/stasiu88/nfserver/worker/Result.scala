@@ -6,11 +6,30 @@ import scalaz._
 import Scalaz._
 class Result(private val contents: Vector[Map[Long,Map[List[Int],Long]]], val bucketCount:Int, val statisticCount:Int){
   def apply(bucket:Int, statistic:Int) = contents(bucket + statistic*bucketCount)
-  
+  def clipIfNeeded(q: Query) ={
+    if(q.needsClipping) this.clip(q.clipSize)
+    else this
+  }
+  def clip(count:Int) = {
+    //TODO: decide if clip is needed
+    new Result(
+      contents map {
+        _ map {
+          case (period,m) =>
+            period -> (
+              if(m.size==1) m
+              else m.toList sortBy {-_._2} take count toMap
+            )
+        }
+      },
+      bucketCount,
+      statisticCount
+    )
+  }
   def |+|(that: Result) = {
     require(this.bucketCount == that.bucketCount)
     require(this.statisticCount == that.statisticCount)
-    val newContents = this.contents.zip(that.contents).map{t => t._1|+|t._2}
+    val newContents = this.contents zip that.contents map {t => t._1|+|t._2}
     new Result(newContents, bucketCount, statisticCount)
   }
   def toXml(q: Query)=
@@ -20,14 +39,14 @@ class Result(private val contents: Vector[Map[Long,Map[List[Int],Long]]], val bu
         yield <statistic><type>{q.statistic.sumOver(statistic)}</type>
         {
           for(bucket <- (0 until bucketCount)) 
-          yield <bucket><name>Category {bucket}</name>
+          yield <bucket><name>{q.splitfilter.getNameForBucket(bucket).getOrElse("Unknown")}</name>
           {
             for((period,m)<-apply(bucket,statistic)) 
-            yield <period><timestamp>
-            {
+            yield <period><timestamp>{
               q.statistic.period.decode(period)
-              }</timestamp>{
-              for((index,value)<-m) 
+            }</timestamp>
+            {
+              for((index,value)<-m.toList sortBy {-_._2}) 
               yield <datapoint>
                 <index>{q.statistic.indexing.decode(q, index)._1}</index>
                 <value>{value}</value>
