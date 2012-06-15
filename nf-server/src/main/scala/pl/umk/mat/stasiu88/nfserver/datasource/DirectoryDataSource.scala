@@ -45,14 +45,13 @@ class DirectoryDataSource(val dir:File) extends DataSource{
      }
   }
   def refresh(){
-    val toRemove = new HashSet[String]()
-    files.keys foreach { path =>
+    files = files filter { case (path,_) =>
       val file = new File(path)
-      if(!file.exists() || file.isDirectory() || !file.canRead() || file.length()==0){
-        toRemove += path
-      }
+      (  file.exists() 
+      && ! file.isDirectory() 
+      && file.canRead() 
+      && file.length() > 0 )
     }
-    files --= toRemove
     refreshDir(dir)
   }
   def foreach(q:Query)(f:Flow=>Unit){

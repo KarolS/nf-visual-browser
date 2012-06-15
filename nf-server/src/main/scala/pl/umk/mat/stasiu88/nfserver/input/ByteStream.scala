@@ -6,6 +6,7 @@
 package pl.umk.mat.stasiu88.nfserver.input
 
 import java.io.BufferedInputStream
+import java.io.ByteArrayStream
 import java.io.InputStream
 import java.io.IOException
 import pl.umk.mat.stasiu88.nfserver.Utils._
@@ -67,6 +68,11 @@ trait ByteStream {
     new String(bs,"latin1")
   }
   def close() = stream.close()
+  
+  def getSimilar(is: InputStream): ByteStream
+  
+  def decompressBlock(count: Long, lzo: Lzo) = getSimilar(lzo.decompress(
+  	new ByteArrayStream(rawBytes(count)) ))
 }
 class BigEndianByteStream(val stream: InputStream, initialOffset: Long = 0L) extends ByteStream {
   voffset = initialOffset
@@ -104,6 +110,7 @@ class BigEndianByteStream(val stream: InputStream, initialOffset: Long = 0L) ext
       0x100000000000000L * i7
   }
   def getIPv6() = ???
+  def getSimilar(is: InputStream) = new BigEndianByteStream(is)
 }
 class LittleEndianByteStream(val stream: InputStream, initialOffset: Long = 0L) extends ByteStream {
   voffset = initialOffset
@@ -141,4 +148,5 @@ class LittleEndianByteStream(val stream: InputStream, initialOffset: Long = 0L) 
       0x100000000000000L * i7
   }
   def getIPv6() = ???
+  def getSimilar(is: InputStream) = new LittleEndianByteStream(is)
 }

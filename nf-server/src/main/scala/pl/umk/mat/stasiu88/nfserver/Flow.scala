@@ -23,7 +23,8 @@ final class Flow(
   var protocol: Int = 0,
   var tos: Byte = 0,
   var srcAS: Int = 0,
-  var destAS: Int = 0
+  var destAS: Int = 0,
+  var tos: Int = 0
   ) {
   override def toString() = (
     Protocols.name(protocol) + " " +
@@ -54,6 +55,7 @@ case class IP4Addr(value: Int) extends Addr {
   def toIntList = List(4, value)
 }
 case class IP6Addr(part0: Long, part1: Long) extends Addr {
+  //TODO: override def toString = ...
   def toIntList = List(6, (part0>>>32).toInt, (part0).toInt, (part1>>>32).toInt, (part1).toInt)
 }
 object IP4Addr {

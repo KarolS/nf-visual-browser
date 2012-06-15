@@ -81,6 +81,7 @@ class CumulativeChartTableSubPanel(val dataType: DataType.Value, val chart: Cumu
   unitList.setSelectedIndex(0)
   unitList.withAction{
     model.setUnit(unitList.getSelectedItem.asInstanceOf[UnitListItem].unit)
+    model.fireTableDataChanged()
   }
   withLayout(this, "p,5dlu,f:p:g", "p,5dlu,f:p:g").
   add(1,3, 3,1, scrollableTable(model)).

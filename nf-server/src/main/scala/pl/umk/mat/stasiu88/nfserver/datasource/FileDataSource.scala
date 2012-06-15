@@ -62,7 +62,8 @@ class FileDataSource(val file: File) extends DataSource{
       LeafSplitFilter(AllFilter),
       NodeSplitFilter(AllFilter,List(LeafSplitFilter(AllFilter)))
       )
-      
+  
+  //TODO: check if optimal
   override def getQuickResult(q:Query):Option[Result]={
     //TODO: optimize for pure TCP/UDP/ICMP queries
     val data = readHeader(q) match {

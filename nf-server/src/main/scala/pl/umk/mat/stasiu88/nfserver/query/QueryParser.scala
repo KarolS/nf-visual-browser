@@ -34,6 +34,8 @@ class QueryParser extends RegexParsers {
         new Query(tw,tz,snd,filter,stat)
     }
     
+// ---------------- TIME WINDOW
+
   def TIMEZONE_REGEX: Parser[String] = "[a-z/]+".r
   def timezone: Parser[DateTimeZone] = 
     TIMEZONE_REGEX ^^ {id => TimeZoneFactory(id) get } //TODO
@@ -82,12 +84,16 @@ class QueryParser extends RegexParsers {
       (d.substring(0,2).toInt, d.substring(3,5).toInt, d.substring(4,6).toInt)
       }
     
+// ---------------- SUBNET DEFINITIONS
+
   def subnetid: Parser[String] = "[a-z]+".r
   def subnetdefinition: Parser[(String,Subnet)] = 
     subnetid ~ subnet ^^ { case id~s => (id,s)}
   def subnetdefinitions: Parser[Map[String,Subnet]] = 
     rep(subnetdefinition) ^^ {_.toMap[String,Subnet]}
   
+// ---------------- FILTERS
+
   def splitfilter: Parser[SplitFilter] =
     filterExternal ~ opt(splitruleset) ^^ {
       case f ~ None    => LeafSplitFilter(f)
@@ -159,6 +165,11 @@ class QueryParser extends RegexParsers {
     "tcp" ^^^ ProtocolFilter(TCP) |
       "udp" ^^^ ProtocolFilter(UDP) |
       "icmp" ^^^ ProtocolFilter(ICMP) |
+      "igmp" ^^^ ProtocolFilter(IGMP) |
+      "egp" ^^^ ProtocolFilter(EGP) |
+      "rsvp" ^^^ ProtocolFilter(RSVP) |
+      "icmp6" ^^^ ProtocolFilter(ICMP) |
+      "sctp" ^^^ ProtocolFilter(SCTP) |
       "proto" ~> integer ^^ { ProtocolFilter(_) }
 
   def portdesignation: Parser[Designation[Int]] =
@@ -181,7 +192,36 @@ class QueryParser extends RegexParsers {
       portdesignation ~ ("notin" | "not" ~ "in") ~ portrange ^^ { case d ~ _ ~ ((i1,i2)) => NotFilter(PortRangeFilter(d, i1, i2)) } //TODO: port op port
 
   def portrange: Parser[(Int,Int)] = integer ~ (".." | "...") ~ integer ^^ {case i~_~j => (i,j)}
+
+  def interfacedesignation: Parser[Designation[Int]] =
+    "inputif" ^^^ SrcIntDesignation |
+      "outputif" ^^^ DstIntDesignation |
+      "anyif" ^^^ AnyIntDesignation |
+      "bothif" ^^^ BothIntDesignation
+
+  def interfacefilter: Parser[Filter] =   
+      hostnamedesignation ~ ( "=="|"=" |"eq") ~ integer ^^ { case d ~ _ ~ i => InterfaceEqualFilter(d, i) } |
+      hostnamedesignation ~ ("!="|"ne") ~ integer ^^ { case d ~ _ ~ i => NotFilter(InterfaceEqualFilter(d, i)) }
   
+  def octalDigit:Parser[Int] = ("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")^^{_.toInt}
+  def tosmask: Parser[Int] = integer | "[" ~> rep1sep(octaldigit, ",") <~ "]" ^^ { _.foldl(0){ (mask,bit) => mask |= (1<<(7-bit)) } }
+  
+  def maskrule: Parser[Int=>Filter] = 
+    ("=="|"=" |"eq") ^^^ TosEqualFilter(_) |
+    "all" ^^^ TosAllFilter(_) |
+    "any" ^^^ TosAnyFilter(_) |
+    "none" ^^^ TosNoneFilter(_) |
+    "not"~"all" ^^^ TosNotAllFilter(_)
+  
+  def tosfilter: Parser[Filter] = 
+    "tos" ~> "bit" ~> octalDigit <~ "set" ^^ {b => TosAllFilter(1<<(7-bit))} |
+    "tos" ~> "bit" ~> octalDigit <~ "clear" ^^ {b => TosNoneFilter(1<<(7-bit))} |
+    "tos" ~> "bit" ~> octalDigit <~ "not" <~ "set" ^^ {b => TosNoneFilter(1<<(7-bit))} |
+    "tos" ~> ("bits" | "mask") ~> tosmask <~ ("=="|"=" |"eq") ~ tosmask ^^ { case mask ~ tos => TosEqualFilter(mask, tos)} |
+    "tos" ~> ("bits" | "mask") ~> tosmask ~ maskrule <~ opt("set") ^^ { case mask ~ f => f(mask) }
+  
+// ---------------- STATISTICS
+
   implicit def convertListOfIndexings(l: List[Indexing]): ListOfIndexing = l match {
     case Nil     => NilIndex
     case i :: xs => new ConsIndex(i, convertListOfIndexings(xs))
@@ -219,6 +259,7 @@ class QueryParser extends RegexParsers {
       "ip" ~> ("notin" | "not" ~ "in") ~> subnet ^^ { new IPNotInSubnetIndex(_) } |
       "ip" ^^^ AnyIPIndex |
       "port" ~> "in" ~> portrange ^^ {new PortInRangeIndex(_)} |
+      "port" ~> ("notin" | "not"~"in") ~> portrange ^^ {new PortNotInRangeIndex(_)} |
       "port" ^^^ AnyPortIndex |
       "srcport" ^^^ SrcPortIndex |
       ("dstport"|"destport") ^^^ DestPortIndex |
@@ -228,7 +269,8 @@ class QueryParser extends RegexParsers {
       "srchost" ^^^ SrcHostnameIndex |
       ("dsthost" | "desthost") ^^^ DestHostnameIndex |
       "host" ~> "in" ~> domainname ^^ {new HostnameInDomainIndex(_)} |
-      "host" ~> ("notin" | "not"~"in") ~> domainname ^^ {new HostnameNotInDomainIndex(_)}
+      "host" ~> ("notin" | "not"~"in") ~> domainname ^^ {new HostnameNotInDomainIndex(_)} |
+      "tos" ~> ("bits" | "mask") ~> tosmask ^^ {new TosIndex(_)}
 
   def period: Parser[Period] =
     ("alltime" | "always" | ("all" ~ "time") | "all") ^^^ EachAlways |

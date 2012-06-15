@@ -23,15 +23,15 @@ trait DataSource {
     getQuickResult(q) foreach { return _ }
     val result = new MutableResult(q.splitfilter.bucketCount, q.statistic.sumOver.length)
     foreach(q){ f=>
+      val indexes = q.statistic.indexing(q,f)
+      val period = q.statistic.period.apply(q,f)
       q.splitfilter.classify(f) foreach { bucket =>
-        val indexes = q.statistic.indexing(q,f)
-        val period = q.statistic.period.apply(q,f)
         var i = 0
         for(v <- q.statistic.sumOver){
           for(index<-indexes){
             result.add(bucket,i,period,index,v(f))
           }
-          i+=1
+          i += 1
         }
       }
     }

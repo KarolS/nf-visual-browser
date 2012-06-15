@@ -44,7 +44,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
         }
       case "POST" =>
         target match {
-          case "/status" => respond(SC_ACCEPTED){ _ => "OK" }
+          case "/status" => respond(SC_OK){ _ => "OK" }
           case "/new" => respond(SC_ACCEPTED){ params =>
             val username = params("username")(0)
             val password = params("password")(0)

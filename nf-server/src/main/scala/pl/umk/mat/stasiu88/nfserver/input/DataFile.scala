@@ -59,19 +59,19 @@ class DataFile(fileName: String) {
   }
   else{
     val headerType = stream.get16()
-    stream.skip16()
+    val statsSize = stream.get16()
     headerType match {
       case 2 => 
         
     }
-    ???
+    stream.skip8(statsSize)
   }
   def flowCount = vflowCount
   def byteCount = vbyteCount
   def packetCount = vpacketCount
   
-  val firstSeen = firstSeenS.toLong*1000 + firstSeenMs
-  val lastSeen = lastSeenS.toLong*1000 + lastSeenMs
+  val firstSeen = firstSeenS*1000L + firstSeenMs
+  val lastSeen = lastSeenS*1000L + lastSeenMs
   
   debug("flowCount = " + flowCount)
   debug("firstSeen = " + new Instant(firstSeen))
@@ -83,13 +83,14 @@ class DataFile(fileName: String) {
     try {
       val flow = new Flow()
       var extensionMap = Map[Int,List[Int]]()
+      val lzo = new Lzo
       numBlocks times {
         val numRecords = stream.get32()
         debug("numRecords = " + numRecords + " 0x" + numRecords.toHexString)
         val blockSize = stream.get32() //important iff compressed
         debug("blockSize = " + blockSize + " 0x" + blockSize.toHexString)
         stream.skip16(2)
-        val records = if(compressed) decompress(stream.rawBytes(blockSize)) else stream
+        val records = if(compressed) stream.decompressBlock(blockSize,lzo) else stream
         // in the first record, the offset should be 0x120
         numRecords times { 
           val typ = records.get16()
@@ -100,7 +101,7 @@ class DataFile(fileName: String) {
               val id = records.get16()
               val exsize = records.get16()
               (exsize/2) times {
-                extensions :+= records.get16()
+                extensions :+= records.get16() //TODO: optimize
               }
               debug("Extension map read: " + id + "->" + extensions)
               extensionMap += (id -> extensions)
