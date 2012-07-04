@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfserver.manager
 import scala.actors.Actor
 import scala.collection.mutable
@@ -9,12 +14,18 @@ import pl.umk.mat.stasiu88.nfserver.Logging
 import pl.umk.mat.stasiu88.nfserver.authz.AuthzSource
 import pl.umk.mat.stasiu88.nfserver.worker.WorkerComponent
 import pl.umk.mat.stasiu88.nfserver.authz.AuthzSourceComponent
+import org.joda.time.Instant
 
 trait DefaultManagerComponent extends ManagerComponent{
   this: WorkerComponent with AuthzSourceComponent =>
   lazy val manager = new DefaultManager 
 }
 
+/**
+ * Default manager
+ * <br>
+ * Domyślny menedżer
+ */
 class DefaultManager extends Manager with Actor with Logging {
   private[this] val cache = mutable.Map[Symbol,CacheItem]()
 
@@ -28,7 +39,7 @@ class DefaultManager extends Manager with Actor with Logging {
     this.worker = worker
   }
     
-  def withAuthorization(credentials: Credentials)(body: =>Unit) = {
+  private def withAuthorization(credentials: Credentials)(body: =>Unit) = {
     if(authSource.authorize(credentials)){
       if(cache.filterNot{
         case (id, ci) => ci.isFinished
@@ -41,6 +52,13 @@ class DefaultManager extends Manager with Actor with Logging {
   def act(){
     loop{
       try{
+        var toRemove = Set[Symbol]()
+        val NOW = Instant.now()
+        cache.foreach{
+          case (id,item) =>
+            if(item.timeout.compareTo(NOW)<0 && item.isFinished) toRemove += id
+        }
+        toRemove foreach {cache remove _}
         react{
           case NewJob(q, cr) =>
             log_debug("Ordered to create new job from query "+q)

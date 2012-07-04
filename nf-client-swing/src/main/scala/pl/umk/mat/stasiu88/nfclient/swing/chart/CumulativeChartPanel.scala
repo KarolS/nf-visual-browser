@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.chart
 
 import javax.swing._
@@ -7,6 +12,11 @@ import pl.umk.mat.stasiu88.nfclient.SwingUtils._
 import javax.swing.table.AbstractTableModel
 import scala.xml.Node
 
+/**
+ * A panel displaying a cumulative chart and the data table.
+ * <br>
+ * Panel wyświetlający wykres skumulowany i tabelę z danymi.
+ */
 class CumulativeChartPanel(val name:String, dataType: DataType.Value, chart: CumulativeChart) extends ChartPanel{
   val tabs = new JTabbedPane
   

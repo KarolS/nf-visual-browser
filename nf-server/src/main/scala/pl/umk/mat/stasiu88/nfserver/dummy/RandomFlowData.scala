@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
- * This software is licenced under European Union Public Licence v.1.1 or later
+ * This software is licensed under European Union Public Licence v.1.1 or later
  */
 
 package pl.umk.mat.stasiu88.nfserver.dummy
@@ -9,10 +9,11 @@ import pl.umk.mat.stasiu88.nfserver._
 import Protocols._
 import scala.util.Random
 
-object RandomFlowData {
-
-}
-
+/**
+ * Random flow data generator.
+ * <br>
+ * Generator losowych danych o przepływach.
+ */
 class RandomFlowData(
   val localSubnet: IP4Addr,
   val subnetSize: Int,

@@ -1,5 +1,5 @@
 <config>
     <port>8888</port>
-    <datasource><random/></datasource>
+    <datasource><directory>/opt/results-05-22</directory></datasource>
     <authzsource><allow-all/></authzsource>
 </config>

@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.chart
 
 import javax.swing._
@@ -6,7 +11,11 @@ import pl.umk.mat.stasiu88.nfclient.chart._
 import pl.umk.mat.stasiu88.nfclient.SwingUtils._
 import javax.swing.table.AbstractTableModel
 
-
+/**
+ * A panel displaying a cumulative chart.
+ * <br>
+ * Panel wyświetlający wykres skulumowany.
+ */
 class CumulativeChartGraphSubPanel(dataType: DataType.Value, chart: CumulativeChart) extends JPanel{
   withLayout(
     this,

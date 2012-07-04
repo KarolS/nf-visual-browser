@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
- * This software is licenced under European Union Public Licence v.1.1 or later
+ * This software is licensed under European Union Public Licence v.1.1 or later
  */
 
 package pl.umk.mat.stasiu88.nfserver.input
@@ -14,9 +14,14 @@ import pl.umk.mat.stasiu88.nfserver.Flow
 import pl.umk.mat.stasiu88.nfserver.Utils._
 import pl.umk.mat.stasiu88.nfserver.IP4Addr
 
+/**
+ * Reads flow data from nfcapd files.
+ * <br>
+ * Wczytuje dane o przepływach z plików nfcapd.
+ */
 class DataFile(fileName: String) {
   
-  def debug(s: =>String){
+  private[this]def debug(s: =>String){
     //println(s)
   }
   
@@ -77,8 +82,15 @@ class DataFile(fileName: String) {
   debug("firstSeen = " + new Instant(firstSeen))
   debug("lastSeen = " + new Instant(lastSeen))
   
-  def decompress(data: Array[Byte]):ByteStream = ???
+  private def decompress(data: Array[Byte]):ByteStream = ???
   
+  /**
+   * Iterates over all flow records in the file. 
+   * The parameter to <code>function</code> is mutable.
+   * <br>
+   * Iteruje po wszystkich rekordach z przepływami w pliku.
+   * Parametr do <code>function</code> jest mutowalny.
+   */
   def foreach(function: Flow=>Unit){
     try {
       val flow = new Flow()
@@ -221,7 +233,10 @@ class DataFile(fileName: String) {
     }
   }
   
-  def map[A](function: Flow=>A):Seq[A] = ???
-  
+  /**
+   * Closes the file.
+   * <br>
+   * Zamyka plik.
+   */
   def close() = stream.close()
 }

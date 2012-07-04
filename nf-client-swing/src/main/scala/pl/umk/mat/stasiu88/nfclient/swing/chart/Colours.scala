@@ -1,9 +1,19 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.chart
 
 import java.awt.Color
 import scala.collection.mutable.{Map=>MMap}
 import scala.math._
 
+/**
+ * Colour generator.
+ * <br>
+ * Generator kolorów.
+ */
 object Colours {
 
   private[this]val cache = MMap[Int, Color]().withDefault{ i =>
@@ -21,19 +31,40 @@ object Colours {
       case _ => Color.GRAY
     }
   }
+  /**
+   * Returns a colour for given index.
+   * <br>
+   * Zwraca kolor o podanym indeksie.
+   */
   def apply(i: Int) = {
     cache(i)
   }
+  /**
+   * Returns a colour for given index in hex.
+   * <br>
+   * Zwraca kolor o podanym indeksie w formie szesnastkowej.
+   */
   def inHex(i:Int) = {
     val c = cache(i)
     List(c.getRed,c.getGreen,c.getBlue).map{"%02x" format _}.foldLeft("")(_+_)
   }
 }
+
+/**
+ * Enumeration representing units.
+ * <br>
+ * Typ wyliczeniowy reprezentujący jednostki.
+ */
 object DataUnit extends Enumeration{
   type Unit = Value
   val Bytes, Kilobytes, Megabytes, Gigabytes, 
     Milliseconds, Seconds, Minutes, Hours, 
     Packets, Flows = Value 
+  /**
+   * Size of a unit in base units.
+   * <br>
+   * Rozmiar jednostki w jednostkach podstawowych.
+   */
   def size(u: Value): Long = u match{
     case Kilobytes => 1024L
     case Megabytes => 1024L*1024L
@@ -43,6 +74,11 @@ object DataUnit extends Enumeration{
     case Hours   => 3600000L
     case _ => 1L
   }
+  /**
+   * Symbol for a unit.
+   * <br>
+   * Symbol dla jednostki.
+   */
   def symbol(u: Value): String = u match {
     case Bytes     => " B"
     case Kilobytes => " KB"
@@ -55,6 +91,11 @@ object DataUnit extends Enumeration{
     case Hours   => " h"
     case _ => ""
   } 
+  /**
+   * Name for a unit.
+   * <br>
+   * Nazwa dla jednostki.
+   */
   def name(u: Value): String = u match {
     case Bytes     => "Bytes"
     case Kilobytes => "Kilobytes"
@@ -70,9 +111,19 @@ object DataUnit extends Enumeration{
     case _ => ""
   } 
 }
+/**
+ * Enumeration representing result data types.
+ * <br>
+ * Typ wyliczeniowy reprezentujący typy danych w wyniku.
+ */
 object DataType extends Enumeration{
   type Unit = Value
   val Bytes, Flows, Packets, Duration = Value 
+  /**
+   * All units of given type.
+   * <br>
+   * Wszystkie jednostki danego typu.
+   */
   def units(t: Value) = t match {
     case Bytes => List(DataUnit.Bytes,DataUnit.Kilobytes,DataUnit.Megabytes,DataUnit.Gigabytes)
     case Flows => List(DataUnit.Flows)
@@ -87,7 +138,11 @@ object DataType extends Enumeration{
     case Duration => "Duration"
     case _ => "?"
   }
-  
+  /**
+   * Returns optimal step size for given scale and minimal step apparent height in pixels.
+   * <br>
+   * Zwraca optymalny rozmiar kroku dla danej skali i minimalnej widocznej wysokości kroku w pikselach.
+   */
   def pickScaleStep(typ: Value, scale: Double, stepHeightInPixels: Int) = {
     val avUnits = typ match {
       case Bytes => List(1L -> " B", 10L -> "0 B", 100L -> "00 B", 

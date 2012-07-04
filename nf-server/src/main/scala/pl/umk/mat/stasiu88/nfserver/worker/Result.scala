@@ -1,15 +1,38 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfserver.worker
+
 import scala.collection.mutable.{Map=>MMap}
 import scala.collection.mutable.HashMap
 import pl.umk.mat.stasiu88.nfserver.query.Query
 import scalaz._
 import Scalaz._
+
+/**
+ * Results of a query on a datasource.
+ * <br>
+ * Wyniki zapytania na źródle danych.
+ */
 class Result(private val contents: Vector[Map[Long,Map[List[Int],Long]]], val bucketCount:Int, val statisticCount:Int){
   def apply(bucket:Int, statistic:Int) = contents(bucket + statistic*bucketCount)
+  
+  /**
+   * removes unnecesary results.
+   * <br>
+   * Usuwa zbędne wyniki.
+   */
   def clipIfNeeded(q: Query) ={
     if(q.needsClipping) this.clip(q.clipSize)
     else this
   }
+  /**
+   * Returns a result with only <code>count</code> top results per period.
+   * <br>
+   * Zwraca wynik z tylko <code>count</code> największymi wynikami w okresie.
+   */
   def clip(count:Int) = {
     //TODO: decide if clip is needed
     new Result(
@@ -26,6 +49,12 @@ class Result(private val contents: Vector[Map[Long,Map[List[Int],Long]]], val bu
       statisticCount
     )
   }
+  
+  /**
+   * Combines two results together.
+   * <br>
+   * Łączy dwa wyniki.
+   */
   def |+|(that: Result) = {
     require(this.bucketCount == that.bucketCount)
     require(this.statisticCount == that.statisticCount)
@@ -60,12 +89,23 @@ class Result(private val contents: Vector[Map[Long,Map[List[Int],Long]]], val bu
     }
     </result>
 }
+
+/**
+ * Mutable of a query on a datasource.
+ * <br>
+ * Mutowalne wyniki zapytania na źródle danych.
+ */
 class MutableResult(val bucketCount:Int, val statisticCount:Int){
   private val contents = Array.fill(bucketCount*statisticCount){
     new HashMap[Long,MMap[List[Int],Long]]()
   }
   
   def apply(bucket:Int, statistic:Int) = contents(bucket + statistic*bucketCount)
+  /**
+   * Adds a value for given bucket, statistic, and period.
+   * <br>
+   * Dodaje wartość dla danej kategorii, statystyki i okresu.
+   */
   def add(bucket:Int, statistic:Int, period:Long, index: List[Int], value:Long) {
     val m = apply(bucket,statistic)
     if(!m.contains(period)) m(period) = new HashMap()
@@ -73,6 +113,11 @@ class MutableResult(val bucketCount:Int, val statisticCount:Int){
     if(!mm.contains(index)) mm(index)=value
     else mm(index)=mm(index)+value
   }
+  /**
+   * Converts into immutable result.
+   * <br>
+   * Konwertuje na niemodyfikowalny wynik.
+   */
   def freeze():Result = {
     new Result(
         Vector(contents.view.map{ m:HashMap[Long,MMap[List[Int],Long]]=>

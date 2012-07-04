@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfserver.server
 
 import org.eclipse.jetty.server.Handler
@@ -15,8 +20,18 @@ import pl.umk.mat.stasiu88.nfserver.manager.Manager
 import pl.umk.mat.stasiu88.nfserver.messages._
 import pl.umk.mat.stasiu88.nfserver.Logging
 
+/**
+ * Handler for HTTP requests
+ * <br>
+ * Handler obsługujący żadania HTTP
+ */
 class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
   
+  /**
+   * Handle a single request
+   * <br>
+   * Obsługa pojedynczego żądania
+   */
   def handle(target: String, baseRequest:Request, request: HttpServletRequest, response: HttpServletResponse){
     println(target)
     def respond(status: Int, wrongStatus: Int = SC_INTERNAL_SERVER_ERROR)(content: Map[String,Array[String]]=>Any) = {
@@ -37,9 +52,10 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
     baseRequest.getMethod() match {
       case "GET" => 
         target match {
-          case "/WEB" => respond(SC_OK){_ => FORM}
-          case "/WEBCLIENT" => respond(SC_OK){_ => CLIENT_FORM}
-          case "/PARSER" => respond(SC_OK){_ => PARSER_FORM}
+          case "/status" => respond(SC_OK){ _ => "OK" }
+          //case "/WEB" => respond(SC_OK){_ => FORM}
+          //case "/WEBCLIENT" => respond(SC_OK){_ => CLIENT_FORM}
+          //case "/PARSER" => respond(SC_OK){_ => PARSER_FORM}
           case _ => respond(SC_NOT_FOUND){_ => "404"}
         }
       case "POST" =>
@@ -102,7 +118,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
               case _ => "?"
             }
           }
-          case "/WEB" => respond(SC_OK){params=> 
+         /* case "/WEB" => respond(SC_OK){params=> 
               <html>
                 <body>
                   Your input:
@@ -132,7 +148,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
                 }</pre>
               </body>
             </html>
-          }
+          }*/
           case _ => respond(SC_NOT_FOUND){_ => "404"}
         }
     }

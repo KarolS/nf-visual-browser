@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.chart
 import scala.xml.Node
 import pl.umk.mat.stasiu88.nfclient.Utils._
@@ -6,20 +11,54 @@ import org.joda.time.DateTime
 import scala.collection.mutable.ArrayBuilder
 import scala.collection.mutable.ArrayBuffer
 import org.joda.time.format.DateTimeFormat
+/**
+ * Contains parsed results (chart model), ready for displaying.
+ * <br>
+ * Zawiera sparsowane wyniki (model wykresu), gotowe do wyświetlenia.
+ */
 trait Chart
+/**
+ * Utility functions for working with chart models.
+ * <br>
+ * Funkcje pomocnicze do pracy z modelami wykresów.
+ */
 object Chart {
   
+  /**
+   * Array of two-digit hours.
+   * <br>
+   * Tablica dwucyfrowych godzin.
+   */
   val HOD_A = (0 to 23).map { twoDigit _ }.toArray
-  
+  /**
+   * Array of three-letter day of week abbreviations.
+   * <br>
+   * Tablica trójliterowych skrótów dni tygodnia.
+   */
   val DOW_A = Array("MON","TUE","WED","THU","FRI","SAT","SUN")
+  /**
+   * Array of hours of week.
+   * <br>
+   * Tablica godzin tygodnia.
+   */
   val HOW_A = (for(d<-DOW_A; h<-HOD_A) yield d+"-"+h).toArray
   
+  /**
+   * Converts a number from 0 to 31 to its two-digit decimal representation.
+   * <br>
+   * Konwertuje liczbę z przedziału od 0 do 31 to postaci dziesiętnej dwucyfrowej. 
+   */
   def twoDigit(i:Int) = if(i<10) "0"+i else ""+i
   
   val DAYS_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd")
   val WEEK2_FORMATTER = DateTimeFormat.forPattern("MM-dd")
   val HOURS_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH")
   val MINUTES_FORMATTER = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm")
+  /**
+   * Fills up gaps in the set of periods.
+   * <br>
+   * Uzupełnia luki w zbiorze okresów.
+   */
   def continuousPeriods(somePeriods: Set[String]):Array[String] = {
     val min = somePeriods.min
     val max = somePeriods.max
@@ -88,6 +127,12 @@ object Chart {
     }
     
   }
+  
+  /**
+   * Gets a number (1-7) for day of week name.
+   * <br>
+   * Zwraca liczbę (1-7) dla nazwy dnia tygodnia.
+   */
   def dowIdentifier(n:String) = n.substring(0,2).toLowerCase match {
     case "mo" => Some(1)
     case "tu" => Some(2)
@@ -98,6 +143,11 @@ object Chart {
     case "su" => Some(7)
     case _ => None
   }
+  /**
+   * Comparator for comparing periods.
+   * <br>
+   * Komparator porównujący okresy.
+   */
   def periodSorter(p1:String, p2:String):Boolean = { 
     if(p1=="" || p2=="") return p1<p2
     if(p1.charAt(0)<'A' || p2.charAt(0)<'A') return p1<p2
@@ -127,8 +177,14 @@ object Chart {
       }
     }
   }
-  
-  def periodMapper[A]
+  /**
+   * Maps a continuous array of period names to a continuous array of values, 
+   * given set of periods, a default value for non-existent periods, and an extractor function. 
+   * <br>
+   * Mapuje ciągłą tablicę nazw okresów na ciągłą tablicę wartości,
+   * mając dane zbiór okresów, wartość domyślną dla nieistniejących okresów i funkcję ekstrahującą.
+   */
+  def periodMapper[@specialized(Long, Int) A]
       (periods: Array[String],periods2: Seq[Period], defaultValue: A)
       (f:Period=>A)
       (implicit manifest: Manifest[A]) = {
@@ -142,6 +198,15 @@ object Chart {
     }
     result
   }
+  /**
+   * Returns 0 if no indexes were used in a query, 
+   * 1 if each datapoint has exactly one index, 
+   * and 2 otherwise.
+   * <br>
+   * Zwraca 0 jeśli zapytanie nie używało indeksacji, 
+   * 1 jeśli każdy punkt danych ma dokładnie jeden indeks 
+   * i 2 w pozostałych przypadkach.
+   */
   def getIndexCount(statistics: List[Statistic]):Int = {
     for(s<-statistics; b<-s.buckets; p<-b.periods){
       if(p.datapoints.size>1) return 2
@@ -149,14 +214,22 @@ object Chart {
     }
     return 1
   } 
-  
+  /**
+   * Returns 1 if the results are all in one period and 2 otherwise.
+   * <br>
+   * Zwraca 1 jeśli wszystkie wyniki należą do jednego okresu i 2 w przeciwnym wypadku.
+   */
   def getPeriodCount(statistics: List[Statistic]):Int = {
     for(s<-statistics; b<-s.buckets){
       if(b.periods.size>1) return 2
     }
     return 1
   }
-  
+  /**
+   * Converts a parsed bucket to a chart model, given the approximate number of indexes and periods.
+   * <br>
+   * Konwertuje sparsowaną kategorię do modelu wykresu, w oparciu o przybliżoną liczbę indeksów i okresów.
+   */
   def convertBucket(bucket: Bucket, indexPeriodCount: (Int,Int)): Chart = {
     if(bucket.periods.size==0){
       new EmptyChart("No data")
@@ -204,6 +277,11 @@ object Chart {
     }
   }
   
+  /**
+   * Creates a pie chart model for categories.
+   * <br>
+   * Tworzy model wykresu kołowego dla kategorii.
+   */
   def createPieChart(statistic: Statistic) = {
     val nonEmptybuckets = statistic.buckets.filter{_.periods.isEmpty == false}
     val categories = nonEmptybuckets.map{_.name}.toArray
@@ -212,6 +290,11 @@ object Chart {
   }
   
   // TODO improve support for buckets with non-equal period lists
+  /**
+   * Creates a cumulative chart model for different buckets over different periods.
+   * <br>
+   * Tworzy model wykresu skumulowanego dla różnych kategorii w różnych okresach.
+   */
   def createCumulativeChart(statistic: Statistic) = {
     val categories = statistic.buckets.map{_.name}.toArray
     if(categories.length == 0) null
@@ -241,6 +324,13 @@ object Chart {
     }
   }
   
+  /**
+   * Converts parsed results for one statitics into a set of chart models, 
+   * given the approximate number of indexes and periods.
+   * <br>
+   * Konwertuje sparsowane wyniki dla jednej statystyki na zestaw modeli wykresów,
+   * w oparciu o przybliżoną liczbę indeksów i okresów.
+   */
   def convertStatistic(statistic: Statistic, indexPeriodCount: (Int,Int)): StatChart = {
     new StatChart(
       statistic.typ, 
@@ -262,6 +352,11 @@ object Chart {
     )
   }
   
+  /**
+   * Converts a list of parsed results for different statistics into a list of sets of chart models.
+   * <br>
+   * Konwertuje listę sparsowanych wyników dla różnych statystyk na listę zestawów modeli wykresów.
+   */
   def convertStatistics(statistics: List[Statistic]) = {
     val indexCount = getIndexCount(statistics)
     val periodCount = getPeriodCount(statistics)
@@ -270,7 +365,17 @@ object Chart {
   
 }
 
+/**
+ * A chart model labelled with a category (= bucket) name.
+ * <br>
+ * Model wykresu z etykietą z nazwy kategorii.
+ */
 class CategoryChart(val category: String, val chart:Chart)
+/**
+ * A set of chart models for one statistic.
+ * <br>
+ * Zestaw modeli wykresów dla jednej statystyki.
+ */
 class StatChart(
   val statistic: String, 
   val categoryCharts: List[CategoryChart], 

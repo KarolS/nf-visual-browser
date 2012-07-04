@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.chart
 
 import javax.swing._
@@ -7,6 +12,11 @@ import pl.umk.mat.stasiu88.nfclient.SwingUtils._
 import javax.swing.table.AbstractTableModel
 import scala.xml.Node
 
+/**
+ * A panel displaying a bar chart and the data table.
+ * <br>
+ * Panel wyświetlający wykres słupkowy i tabelę z danymi.
+ */
 class GraphableTable2ChartPanel(val name:String, colour: Int, dataType: DataType.Value, chart: GraphableTable2) extends ChartPanel{
   val tabs = new JTabbedPane
   
@@ -31,6 +41,11 @@ class GraphableTable2ChartPanel(val name:String, colour: Int, dataType: DataType
   }
 }
 
+/**
+ * A panel displaying a bar chart.
+ * <br>
+ * Panel wyświetlający wykres słupkowy.
+ */
 class GraphableTable2ChartSubPanel(colour: Int, dataType: DataType.Value, chart: GraphableTable2) extends JPanel{
   withLayout(
     this,

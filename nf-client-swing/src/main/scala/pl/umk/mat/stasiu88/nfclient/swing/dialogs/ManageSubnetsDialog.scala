@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.dialogs
 
 import javax.swing._
@@ -6,7 +11,11 @@ import Scalaz._
 import pl.umk.mat.stasiu88.nfclient.SwingUtils._
 import pl.umk.mat.stasiu88.nfclient.SubnetCache
 
-
+/**
+ * A dialog window for managing subnet names.
+ * <br>
+ * Okno dialogowe do zarządzania nazwami podsieci.
+ */
 class ManageSubnetsDialog(parent:JFrame) extends ModalDialog[Unit](parent, "Manage subnetworks"){
   
   def readValue() = ().success

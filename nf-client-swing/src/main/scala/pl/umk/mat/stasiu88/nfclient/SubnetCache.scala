@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient
 
 import scala.collection.mutable.ArrayBuffer
@@ -5,6 +10,11 @@ import javax.swing.table._
 import scalaz._
 import Scalaz._
 
+/**
+ * A data model containing subnet names and their address ranges.
+ * <br>
+ * Model danych zawierający nazwy podsieci i ich zakresy adresów.
+ */
 object SubnetCache extends AbstractTableModel{
   
   private[this] val cache = new ArrayBuffer[(String,String)]()
@@ -72,11 +82,20 @@ object SubnetCache extends AbstractTableModel{
   val SEMI_VALID_IP4_C = """[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+"""r
   //TODO: more, e.g. IPv6
   
-  
+  /**
+   * Validates if a string is a correct subnet name or address range.
+   * <br>
+   * Sprawdza, czy łańcuch jest poprawną nazwą podsieci lub zakresem adresów.
+   */
   def validateSubnet(t:String) = synchronized {
     if(cache.exists(_._1==t)) t.success
     else validateRawSubnet(t)
   }
+  /**
+   * Validates if a string is a correct address range.
+   * <br>
+   * Sprawdza, czy łańcuch jest poprawnym zakresem adresów.
+   */
   def validateRawSubnet(t:String) = {
     val err = "Invalid address or mask".failNel
     def isByte(i:Int) = {

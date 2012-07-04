@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
- * This software is licenced under European Union Public Licence v.1.1 or later
+ * This software is licensed under European Union Public Licence v.1.1 or later
  */
 
 package pl.umk.mat.stasiu88.nfserver.query
@@ -10,6 +10,11 @@ import pl.umk.mat.stasiu88.nfserver.Subnet
 import scalaz._
 import Scalaz._
 
+/**
+ * Enumeration for splitting filter classification results.
+ * <br>
+ * Typ wyliczeniowy z wynikami klasyfikacji filtrów rozdzielających.
+ */
 object SplittingResults extends Enumeration {
   type SplittingResult = Value
   val ACCEPTED, REJECTED, IGNORED = Value
@@ -17,11 +22,36 @@ object SplittingResults extends Enumeration {
 
 import SplittingResults._
 
+/**
+ * Splitting filter.
+ * <br>
+ * Filtr rozdzielający
+ */
 sealed trait SplitFilter {
+  /**
+   * Number of buckets belonging to this filter.
+   * <br>
+   * Liczba kategorii należących do tego filtra.
+   */
   val bucketCount: Int
+  /**
+   * Ordinal number of the first bucket belonging to this filter.
+   * <br>
+   * Numer pierwszej kategorii należącego to tego filtra. 
+   */
   def bucketNo: Int
   def bucketNo_=(i: Int): Unit
+  /**
+   * Tries to classify the flow to a bucket and calls the callback if successful.
+   * <br>
+   * Próbuje zaklasyfikować przepływ do kategorii i wywołuje callback w przypadku sukcesu.
+   */
   def classifyWithCallback(flow: Flow, callback: (Int, Flow) => Unit): SplittingResult
+  /**
+   * Tries to classify the flow to a bucket.
+   * <br>
+   * Próbuje zaklasyfikować przepływ do kategorii.
+   */
   def classify(flow: Flow): Option[Int] = {
     var result: Option[Int] = None
     classifyWithCallback(flow, { (x, _) => result = Some(x) })
@@ -31,12 +61,38 @@ sealed trait SplitFilter {
     case CartesianProductSplitFilter(xs) => CartesianProductSplitFilter(this :: xs)
     case _                               => CartesianProductSplitFilter(List(this, that))
   }
+  /**
+   * Returns a splitting filter with subnet names replaced with actual subnets.
+   * <br>
+   * Zwraca filtr rozdzielający z nazwami podsieci zastąpionymi właściwymi podsieciami.
+   */
   def replaceSubnets(subnets: Map[String, Subnet]): SplitFilter
   
   protected var fname:String=""
+  /**
+   * Generates the name for this filter, with prefix containing all the ancestor filters and negated elder sibling filters.
+   * <br>
+   * Generuje nazwę dla tego filtra, z prefiksem zawierającym wszystkich przodków i zanegowane starsze rodzeństwo.
+   */
   def name(prefix: String): String
+  /**
+   * Returns the name for this bucket, if possible.
+   * <br>
+   * W miarę możliwości zwraca nazwę dla podanej kategorii.
+   */
   def getNameForBucket(i: Int): Option[String]
 }
+/**
+ * Splitting filter with subfilters. 
+ * Ignores flows that don't match the filter, 
+ * accepts flows that match the filter and are accepted by any of the subfilters,
+ * rejects all other flows.
+ * <br>
+ * Filtr rozdzielający z podfiltrami.
+ * Ignoruje przepływy, które nie są przepuszczane przez filtr,
+ * akceptuje przepływy, które są przepuszczane przez filtr i są akceptowane przez któryś z podfiltrów,
+ * odrzuca wszystkie pozostałe.
+ */
 case class NodeSplitFilter(filter: Filter, ruleset: List[SplitFilter]) extends SplitFilter {
   require(ruleset.length > 0)
 
@@ -68,7 +124,7 @@ case class NodeSplitFilter(filter: Filter, ruleset: List[SplitFilter]) extends S
   )
   def name(prefix: String) = {
     fname = if(prefix=="") filter.toString else if (filter == AllFilter) prefix else prefix+", "+filter
-    var p = prefix
+    var p = fname
     for(r<-ruleset){
       p = r.name(p)
     }
@@ -81,6 +137,12 @@ case class NodeSplitFilter(filter: Filter, ruleset: List[SplitFilter]) extends S
   }
   def getNameForBucket(i:Int) = if(i>=bucket && i<bucket+bucketCount) ruleset.map{_ getNameForBucket i}.foldl(none[String])(_|+|_) else None
 }
+
+/**
+ * Splitfilter with no subfilters. Accepts flows that match the filter, rejects the rest.
+ * <br>
+ * Filtr rozdzielający bez podfiltrów. Akceptuje przepływy przepuszczane przez filtr, odrzuca pozostałe.
+ */
 case class LeafSplitFilter(filter: Filter) extends SplitFilter {
 
   override def toString() = filter.toString + " -> " + bucket

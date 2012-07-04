@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing
 
 import javax.swing._
@@ -12,10 +17,17 @@ import pl.umk.mat.stasiu88.nfclient.messages.SetCredentials
 import pl.umk.mat.stasiu88.nfclient.swing.dialogs.ManageSubnetsDialog
 import pl.umk.mat.stasiu88.nfclient.swing.dialogs.CustomQueryDialog
 import pl.umk.mat.stasiu88.nfclient.messages.NewQuery
+import pl.umk.mat.stasiu88.nfclient.messages.CheckStatus
+import pl.umk.mat.stasiu88.nfclient.ui.UI
 
+/**
+ * Main window.
+ * <br>
+ * Okno główne.
+ */
 object MainWindow extends JFrame {
   var agent: Agent = null
-  
+  var ui: UI = null
   setTitle("NfClient")
   
   val credentialsWindow = new UsernamePasswordServerDialog(this)
@@ -31,7 +43,10 @@ object MainWindow extends JFrame {
             agent ! SetServer(s)
             agent ! SetCredentials(u,p)
         }
-      ) if(closeIfFailed) setVisible(false)
+      ) if(closeIfFailed) {
+        setVisible(false)
+        System.exit(0)
+      }
     }
   }
   override def setVisible(b:Boolean) { 
@@ -49,6 +64,9 @@ object MainWindow extends JFrame {
   withMenu(this).
   menu("Client"){
     _.
+    item("Check server status"){
+      agent ! CheckStatus
+    }.
     item("Custom query..."){
       customqueryWindow.get() foreach { q =>
         agent ! NewQuery(q)

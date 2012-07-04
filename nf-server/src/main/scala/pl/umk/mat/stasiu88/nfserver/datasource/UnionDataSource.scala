@@ -1,7 +1,17 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfserver.datasource
 import pl.umk.mat.stasiu88.nfserver.query.Query
 import pl.umk.mat.stasiu88.nfserver.Flow
 
+/**
+ * Data source combining several data sources.
+ * <br>
+ * Źródło danych łączące kilka źródeł danych.
+ */
 class UnionDataSource(val sources: DataSource*) extends DataSource{
   def foreach(q:Query)(f: Flow=>Unit){
     sources foreach { source =>

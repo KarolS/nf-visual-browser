@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing
 
 import javax.swing._
@@ -9,6 +14,11 @@ import scala.xml.XML
 import java.io.FileWriter
 import scala.xml.dtd.DocType
 
+/**
+ * A panel syiplaying charts and tables.
+ * <br>
+ * Panel wyświetlający wykresy i tabele.
+ */
 class PanelWithCharts(val statCharts: List[StatChart]) extends JPanel {
   val tabs = new JTabbedPane
   val subpanels:List[ChartPanel] = statCharts.flatMap{ sc =>
@@ -23,7 +33,7 @@ class PanelWithCharts(val statCharts: List[StatChart]) extends JPanel {
     }
   }.flatMap{ case(idx,name,chart) =>
     //println(name, chart)
-    val p = PanelWithChart(name, chart, idx)
+    val p = PanelWithCharts(name, chart, idx)
     p.foreach{tabs.add(name, _)}
     p
   }
@@ -61,7 +71,7 @@ class PanelWithCharts(val statCharts: List[StatChart]) extends JPanel {
   }
 }
 
-object PanelWithChart {
+object PanelWithCharts {
   def apply(statisticName:String, c:Chart, colourIdx: Int): Option[ChartPanel] ={
     val st = statisticName(0) match {
       case 'b' => DataType.Bytes

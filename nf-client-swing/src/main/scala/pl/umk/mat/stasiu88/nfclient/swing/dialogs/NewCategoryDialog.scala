@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.dialogs
 
 
@@ -29,7 +34,7 @@ class NewCategoryDialog(parent: JFrame)
       def parse(i:String) = ParamUtils.validatePort("Invalid port", i)
     }, new Param("Port 2:"){
       def parse(i:String) = ParamUtils.validatePort("Invalid port", i)
-    }), "(anyport = ", " and anyport = ", ")"),
+    }), "(anyport = ", " and anyport = ", ")"), //TODO OK?
     
     ListItemBuilder("Source port in range", Seq(new Param("Minimum port:"){
       def parse(i:String) = ParamUtils.validatePort("Invalid port", i)
@@ -67,31 +72,55 @@ class NewCategoryDialog(parent: JFrame)
       def parse(i:String) = ParamUtils.validateIP("Invalid IP", i)
     }), "(anyip = ", " and anyip = ", ")"),
     
-    ListItemBuilder("Source IP in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Source IP in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "srcip in ", ""),
-    ListItemBuilder("Destination IP in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Destination IP in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "dstip in ", ""),
-    ListItemBuilder("Any IP in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Any IP in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "anyip in ", ""),
-    ListItemBuilder("Both IPs in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Both IPs in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "bothip in ", ""),
     
-    ListItemBuilder("Source IP not in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Source IP not in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "srcip not in ", ""),
-    ListItemBuilder("Destination IP not in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Destination IP not in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "dstip not in ", ""),
-    ListItemBuilder("Any IP not in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Any IP not in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "anyip not in ", ""),
-    ListItemBuilder("Both IPs not in subnetwork", Seq(new Param("IP:"){
+    ListItemBuilder("Both IPs not in subnetwork", Seq(new Param("Subnet:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
     }), "bothip not in ", ""),
+    
+    ListItemBuilder("Input interface equals", Seq(new Param("Interface:"){
+      def parse(i:String) = ParamUtils.validateInterface("Invalid interface", i)
+    }), "inputif = ", ""),
+    ListItemBuilder("Output interface equals", Seq(new Param("Interface:"){
+      def parse(i:String) = ParamUtils.validateInterface("Invalid interface", i)
+    }), "outputif = ", ""),
+    ListItemBuilder("Any interface equals", Seq(new Param("Interface:"){
+      def parse(i:String) = ParamUtils.validateInterface("Invalid interface", i)
+    }), "anyif = ", ""),
+    ListItemBuilder("No interface equals", Seq(new Param("Interface:"){
+      def parse(i:String) = ParamUtils.validateInterface("Invalid interface", i)
+    }), "bothif != ", ""),
+    ListItemBuilder("Between two interfaces", Seq(new Param("Interface 1:"){
+      def parse(i:String) = ParamUtils.validateInterface("Invalid interface", i)
+    }, new Param("Interface 2:"){
+      def parse(i:String) = ParamUtils.validateInterface("Invalid interface", i)
+    }), "( anyif = ", " and anyif = ", ")"),
+    
+    ListItemBuilder("Type of Service", Seq(new Param("Mask:"){
+      def parse(i:String) = ParamUtils.validateByte("Invalid mask", i)
+    }, new Param("Masked ToS:"){
+      def parse(i:String) = ParamUtils.validateByte("Invalid byte", i)
+    }), "tos mask ", " = ", ""),
     
     ListItemBuilder("HTTP(s) traffic from inside to foreign servers", Seq(new Param("Local network:"){
       def parse(i:String) = ParamUtils.validateSubnet("Invalid subnet", i)
@@ -101,7 +130,7 @@ class NewCategoryDialog(parent: JFrame)
       + subnet
       + " and dstip in "
       + subnet
-      + ") and ((dstport = 80 or dstport = 443) and dstip not in "
+      + ") or ((dstport = 80 or dstport = 443) and dstip not in "
       + subnet
       + " and srcip in "
       + subnet
@@ -116,7 +145,7 @@ class NewCategoryDialog(parent: JFrame)
       + subnet
       + " and dstip not in "
       + subnet
-      + ") and ((dstport = 80 or dstport = 443) and dstip in "
+      + ") or ((dstport = 80 or dstport = 443) and dstip in "
       + subnet
       + " and srcip not in "
       + subnet
@@ -134,7 +163,7 @@ class NewCategoryDialog(parent: JFrame)
     }),
     
     
-    ListItemBuilder("Custom category (advanced)", Seq(new Param("Source port:"){
+    ListItemBuilder("Custom category (advanced)", Seq(new Param("Expression:"){
       def parse(i:String) = i.success
     }), _.mkString(""))
   ){

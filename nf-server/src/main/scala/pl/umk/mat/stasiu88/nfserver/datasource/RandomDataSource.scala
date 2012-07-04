@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfserver.datasource
 
 import pl.umk.mat.stasiu88.nfserver.IP4Addr
@@ -8,6 +13,11 @@ import pl.umk.mat.stasiu88.nfserver.query.Query
 import pl.umk.mat.stasiu88.nfserver.Flow
 import pl.umk.mat.stasiu88.nfserver.worker.MutableResult
 
+/**
+ * Random data source of a given size.
+ * <br>
+ * Źródło losowych danych podanego rozmiaru.
+ */
 class RandomDataSource(size:Int) extends DataSource{
   private[this] val data = new RandomFlowData(
       localSubnet= IP4Addr("192.168.0.0"),

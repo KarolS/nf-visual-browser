@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfserver.manager
 import org.joda.time.{Instant, Duration}
 import scala.actors.Futures._
@@ -7,6 +12,11 @@ import scalaz._
 import Scalaz._
 
 object CacheItem{
+  /**
+   * Creates a new CacheItem representing a new query.
+   * <br>
+   * Tworzy nowy CacheItem reprezentujący nowe zapytanie.
+   */
   def apply(
       originalQuery: String,
       sender: String,
@@ -25,6 +35,12 @@ object CacheItem{
       sender: String
       ):CacheItem = apply(originalQuery, sender, ONE_HOUR)
 }
+
+/**
+ * Stores data associated with a job.
+ * <br>
+ * Przechowuje dane związane z zadaniem.
+ */
 class CacheItem(
     val originalQuery: String,
     val sender:String,
@@ -33,5 +49,4 @@ class CacheItem(
     var progress: Double = 0.0
     ) {
   def isFinished = result.isDefined
-  def tryToCancel = () //TODO
 }

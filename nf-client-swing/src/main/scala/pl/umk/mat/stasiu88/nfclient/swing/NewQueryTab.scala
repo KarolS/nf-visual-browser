@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing
 
 import javax.swing._
@@ -17,6 +22,11 @@ import javax.swing.tree.MutableTreeNode
 import pl.umk.mat.stasiu88.nfclient.SubnetCache
 import scala.collection.JavaConversions._
 
+/**
+ * A panel displayed in the "New Query" tab in the main window.
+ * <br>
+ * Panel wyświetlany wewnątrz zakładki "New Query" w oknie głównym.
+ */
 class NewQueryTab extends JPanel {
   
   private val dateFrom = new JXDatePicker(new java.util.Date)

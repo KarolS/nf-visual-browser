@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.chart
 
 import javax.swing._
@@ -7,6 +12,11 @@ import pl.umk.mat.stasiu88.nfclient.SwingUtils._
 import scala.xml.Node
 import scala.xml.NodeSeq
 
+/**
+ * A panel displaying a pie chart and the data table.
+ * <br>
+ * Panel wyświetlający wykres kołowy i tabelę z danymi.
+ */
 class PieChartPanel(val name:String, dataType: DataType.Value, chart: PieChart) extends ChartPanel {
   val tabs = new JTabbedPane
   
@@ -30,6 +40,11 @@ class PieChartPanel(val name:String, dataType: DataType.Value, chart: PieChart) 
     table ++ image
   }
 }
+/**
+ * A panel displaying a pie chart.
+ * <br>
+ * Panel wyświetlający wykres kołowy.
+ */
 class PieChartSubPanel(dataType: DataType.Value, chart: PieChart) extends JPanel{
   withLayout(
     this,

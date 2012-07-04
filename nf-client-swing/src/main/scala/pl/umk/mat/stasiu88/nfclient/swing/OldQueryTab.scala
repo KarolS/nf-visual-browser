@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing
 
 import javax.swing._
@@ -6,10 +11,15 @@ import com.jgoodies.forms.layout.CellConstraints
 import pl.umk.mat.stasiu88.nfclient.ui._
 import pl.umk.mat.stasiu88.nfclient.SwingUtils._
 import pl.umk.mat.stasiu88.nfclient.messages.CancelQuery
-import pl.umk.mat.stasiu88.nfclient.messages.CancelQuery
+import pl.umk.mat.stasiu88.nfclient.messages.ForgetQuery
 import java.io.File
 import pl.umk.mat.stasiu88.nfclient.messages.RefreshQuery
 
+/**
+ * A panel displaying results and/or status of a query.
+ * <br>
+ * Panel wyświetlający wyniki i/lub status zapytania.
+ */
 class OldQueryTab(id:Symbol) extends JPanel {
 
   private[this]var theComponent: JComponent = null
@@ -17,9 +27,8 @@ class OldQueryTab(id:Symbol) extends JPanel {
   def beforeClosing() {
     theComponent match{
       case null =>
-      case _:QueryInProgressPanel =>
-        MainWindow.agent ! CancelQuery(id)
-      case _:QuerySentPanel =>
+      case _:QueryInProgressPanel | _:QuerySentPanel =>
+        MainWindow.ui ! ForgetQuery(id)
         MainWindow.agent ! CancelQuery(id)
       case _ => 
     }

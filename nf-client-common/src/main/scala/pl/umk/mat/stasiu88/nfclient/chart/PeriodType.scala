@@ -1,7 +1,22 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.chart
 
+/**
+ * Enumerationm for period types.
+ * <br>
+ * Typ wyliczeniowy z typami okresów. 
+ */
 object PeriodType extends Enumeration {
   val MINUTE, HOUR, DAY, WEEK, MONTH, YEAR, DOW, HOW, HOD, ONE = Value
+  /**
+   * Returns a solidus + unit name, if applicable.
+   * <br>
+   * Zwraca ukośnik + nazwę jednostki, o ile dotyczy.
+   */
   def per(v: Value) = v match{
     case MINUTE => "/min"
     case HOUR => "/h"
@@ -22,14 +37,19 @@ object PeriodType extends Enumeration {
   val HOW_REGEX = "[A-Za-z]+-[0-9]+"r
   
   //This one is split into parts due to compiler bug
+  /**
+   * Guesses a period type based on a period string representation.
+   * <br>
+   * Zgaduje typ okresu na postawie łańcucha.
+   */
   def guess(period: String) = {
     part1.orElse(part2).orElse(part3).apply(period)
   }
-  val part1: PartialFunction[String, Value] = {
+  private[this] val part1: PartialFunction[String, Value] = {
     case "" => ONE
     case "all time" => ONE
   }
-  val part2: PartialFunction[String, Value] = {
+  private[this] val part2: PartialFunction[String, Value] = {
     case MINUTE_REGEX() => MINUTE
     case HOUR_REGEX() => HOUR
     case DAY_REGEX() => DAY
@@ -37,12 +57,17 @@ object PeriodType extends Enumeration {
     case MONTH_REGEX() => MONTH
     case YEAR_REGEX() => YEAR
   }
-  val part3: PartialFunction[String, Value] = {
+  private[this] val part3: PartialFunction[String, Value] = {
     case HOD_REGEX() => HOD
     case HOW_REGEX() => HOW
     case DOW_REGEX() => DOW
     case _ => ONE //TODO: ?
   }
+  /**
+   * Whether the label with period name should be under the left edge of the bar instead of the middle.
+   * <br>
+   * Czy etykieta z nazwą okresu powinna być pod lewym krańcem słupka zamiast pod jego środkiem.
+   */
   def alignToTheLeft(period: String) = guess(period) match {
     case MINUTE => true
     case HOUR => true
@@ -50,6 +75,11 @@ object PeriodType extends Enumeration {
     case HOW => true
     case _ => false
   }
+  /**
+   * Whether render or not a label, for a given bar width.
+   * <br>
+   * Czy renderować etykietę, czy nie, dla podanej szerokości słupka.
+   */
   def isImportant(typ: Value, period:String, periodWidth:Double):Boolean ={
     typ match {
       case MINUTE => 

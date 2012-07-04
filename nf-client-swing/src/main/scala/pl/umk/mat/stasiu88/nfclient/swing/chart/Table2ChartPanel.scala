@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.swing.chart
 
 import javax.swing._
@@ -7,6 +12,11 @@ import pl.umk.mat.stasiu88.nfclient.SwingUtils._
 import javax.swing.table.AbstractTableModel
 import scala.xml.Node
 
+/**
+ * A panel displaying a data table with two columns.
+ * <br>
+ * Panel wyświetlający tabelę z danymi o dwu kolumnach.
+ */
 class Table2ChartPanel(val name:String, val dataType: DataType.Value, val chart: Table2) extends ChartPanel {
   val model = new Table2TableModel(chart)
   model.setUnit(DataType.units(dataType).head)

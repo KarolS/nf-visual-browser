@@ -1,6 +1,6 @@
 /*
  * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
- * This software is licenced under European Union Public Licence v.1.1 or later
+ * This software is licensed under European Union Public Licence v.1.1 or later
  */
 
 package pl.umk.mat.stasiu88.nfserver.query
@@ -12,6 +12,11 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.{Map=>MMap}
 import org.joda.time._
 
+/**
+ * A timezone factory.
+ * <br>
+ * Faktoria stref czasowych
+ */
 object TimeZoneFactory{
   var cache = MMap[String,DateTimeZone]()
   for (id<-DateTimeZone.getAvailableIDs().toSet[String]){
@@ -22,10 +27,19 @@ object TimeZoneFactory{
   cache("default") = DateTimeZone.getDefault
   //TODO
   
+  /**
+   * Return a timezone for a given name, if it exists
+   * <br>
+   * Zwraca strefę czasową dla podanej nazwy, jeśli taka istnieje.
+   */
   def apply(id: String):Option[DateTimeZone] = cache get id.toLowerCase
 }
 
-
+/**
+ * Parser for queries
+ * <br>
+ * Parser zapytań
+ */
 class QueryParser extends RegexParsers {
   
   def query: Parser[Query] = 
@@ -36,7 +50,7 @@ class QueryParser extends RegexParsers {
     
 // ---------------- TIME WINDOW
 
-  def TIMEZONE_REGEX: Parser[String] = "[a-z/]+".r
+  def TIMEZONE_REGEX: Parser[String] = """[A-Za-z\/_]+""".r
   def timezone: Parser[DateTimeZone] = 
     TIMEZONE_REGEX ^^ {id => TimeZoneFactory(id) get } //TODO
   
@@ -200,24 +214,23 @@ class QueryParser extends RegexParsers {
       "bothif" ^^^ BothIntDesignation
 
   def interfacefilter: Parser[Filter] =   
-      hostnamedesignation ~ ( "=="|"=" |"eq") ~ integer ^^ { case d ~ _ ~ i => InterfaceEqualFilter(d, i) } |
-      hostnamedesignation ~ ("!="|"ne") ~ integer ^^ { case d ~ _ ~ i => NotFilter(InterfaceEqualFilter(d, i)) }
+      interfacedesignation ~ ( "=="|"=" |"eq") ~ integer ^^ { case d ~ _ ~ i => InterfaceEqualFilter(d, i) } |
+      interfacedesignation ~ ("!="|"ne") ~ integer ^^ { case d ~ _ ~ i => NotFilter(InterfaceEqualFilter(d, i)) }
   
-  def octalDigit:Parser[Int] = ("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")^^{_.toInt}
-  def tosmask: Parser[Int] = integer | "[" ~> rep1sep(octaldigit, ",") <~ "]" ^^ { _.foldl(0){ (mask,bit) => mask |= (1<<(7-bit)) } }
+  def octaldigit:Parser[Int] = ("0"|"1"|"2"|"3"|"4"|"5"|"6"|"7")^^{_.toInt}
+  def tosmask: Parser[Int] = integer | "[" ~> rep1sep(octaldigit, ",") <~ "]" ^^ { _.foldLeft(0){ (mask,bit) => mask | (1<<(7-bit)) } }
   
   def maskrule: Parser[Int=>Filter] = 
-    ("=="|"=" |"eq") ^^^ TosEqualFilter(_) |
-    "all" ^^^ TosAllFilter(_) |
-    "any" ^^^ TosAnyFilter(_) |
-    "none" ^^^ TosNoneFilter(_) |
-    "not"~"all" ^^^ TosNotAllFilter(_)
-  
+    "all" ^^^ {TosAllFilter(_)} |
+    "any" ^^^ {TosAnyFilter(_)} |
+    "none" ^^^ {TosNoneFilter(_)} |
+    "not"~"all" ^^^ {TosNotAllFilter(_)}
+   
   def tosfilter: Parser[Filter] = 
-    "tos" ~> "bit" ~> octalDigit <~ "set" ^^ {b => TosAllFilter(1<<(7-bit))} |
-    "tos" ~> "bit" ~> octalDigit <~ "clear" ^^ {b => TosNoneFilter(1<<(7-bit))} |
-    "tos" ~> "bit" ~> octalDigit <~ "not" <~ "set" ^^ {b => TosNoneFilter(1<<(7-bit))} |
-    "tos" ~> ("bits" | "mask") ~> tosmask <~ ("=="|"=" |"eq") ~ tosmask ^^ { case mask ~ tos => TosEqualFilter(mask, tos)} |
+    "tos" ~> "bit" ~> octaldigit <~ "set" ^^ {b => TosAllFilter(1<<(7-b))} |
+    "tos" ~> "bit" ~> octaldigit <~ "clear" ^^ {b => TosNoneFilter(1<<(7-b))} |
+    "tos" ~> "bit" ~> octaldigit <~ "not" <~ "set" ^^ {b => TosNoneFilter(1<<(7-b))} |
+    "tos" ~> ("bits" | "mask") ~> tosmask ~ ("=="|"=" |"eq") ~ tosmask ^^ { case mask ~_~ tos => TosEqualFilter(mask, tos)} |
     "tos" ~> ("bits" | "mask") ~> tosmask ~ maskrule <~ opt("set") ^^ { case mask ~ f => f(mask) }
   
 // ---------------- STATISTICS
@@ -285,7 +298,11 @@ class QueryParser extends RegexParsers {
     "year" ^^^ EachYear
 
 }
-
+/**
+ * Curried relational operators
+ * <br>
+ * Rozwinięte operatory relacyjne 
+ */
 object RelationalOperators{
   def #==# = new (Int=>(Int=>Boolean)){
     override def toString = "="

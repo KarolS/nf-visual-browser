@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.ui
 
 import pl.umk.mat.stasiu88.nfclient.messages._
@@ -6,6 +11,11 @@ import pl.umk.mat.stasiu88.nfclient.agent._
 import pl.umk.mat.stasiu88.nfclient.Utils._
 import org.joda.time._
 
+/**
+ * Partial UI implemetation.
+ * <br>
+ * Częściowa implementacja UI
+ */
 trait BaseUI extends UI {
   var agent: Agent = agent
   def init(agent: Agent) {
@@ -46,6 +56,7 @@ trait BaseUI extends UI {
   def reactToInvalidCredentials():Unit
   def reactToServerBusy():Unit
   def reactToServerNotResponding():Unit
+  def reactToServerStatusOk():Unit
   
   def act = loop{
     react{
@@ -71,6 +82,10 @@ trait BaseUI extends UI {
         reactToServerBusy()
       case ServerNotResponding =>
         reactToServerNotResponding()
+      case ServerStatusOk =>
+        reactToServerStatusOk()
+      case ForgetQuery(id) =>
+        queries = queries.filterNot(_.id == id)
     }
   }
 }
@@ -91,6 +106,11 @@ object QueryForUI {
   }
 }
 
+/**
+ * A query status and/or results.
+ * <br>
+ * Status i/lub wynik zapytania.
+ */
 sealed trait QueryForUI
 case object FreshQueryForUI extends QueryForUI
 case class QueryInProgressForUI(progress: Double) extends QueryForUI

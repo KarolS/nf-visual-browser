@@ -1,5 +1,15 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.logging
 
+/**
+ * Composable trait providing logging.
+ * <br>
+ * Składalna cecha dostarczająca logowania.
+ */
 trait Logging {
   
   def rawLog(msg: String):Unit
@@ -12,6 +22,11 @@ trait Logging {
   def log_fatal(msg: =>String) = rawLog("[FATAL] "+msg)
 }
 
+/**
+ * Composable trait providing logging. Logs on the console.
+ * <br>
+ * Składalna cecha dostarczająca logowania. Loguje na konsoli.
+ */
 trait ConsoleLogging extends Logging {
   def rawLog(msg: String) = Console synchronized {
     // TODO: improve
@@ -20,6 +35,11 @@ trait ConsoleLogging extends Logging {
   }
 }
 
+/**
+ * Composable trait providing logging. Logs nowhere.
+ * <br>
+ * Składalna cecha dostarczająca logowania. Nie loguje nigdzie.
+ */
 trait NullLogging extends Logging {
   def rawLog(msg: String) = ()
 }

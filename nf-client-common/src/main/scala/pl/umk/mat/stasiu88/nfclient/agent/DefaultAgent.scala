@@ -1,3 +1,8 @@
+/*
+ * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
+ * This software is licensed under European Union Public Licence v.1.1 or later
+ */
+
 package pl.umk.mat.stasiu88.nfclient.agent
 
 import pl.umk.mat.stasiu88.nfclient.ui.UI
@@ -12,10 +17,20 @@ import pl.umk.mat.stasiu88.nfclient.logging.ConsoleLogging
 import pl.umk.mat.stasiu88.nfclient.Utils._
 import pl.umk.mat.stasiu88.nfclient.chart.XmlReader
 
+/**
+ * Composable trait providing the default implementation of an agent.
+ * <br>
+ * Składalna cecha dostarczająca domyślnej implementacji agenta.
+ */
 trait DefaultAgentComponent extends AgentComponent {
   this: UIComponent =>
   lazy val agent = new DefaultAgent with ConsoleLogging
 }
+/**
+ * Default agent implementation.
+ * <br>
+ * Domyślna implementacja agenta.
+ */
 class DefaultAgent extends Agent{
   this: Logging => //TODO: better logging facilities
   private [this] var ui: UI = null
@@ -205,6 +220,13 @@ class DefaultAgent extends Agent{
           }
           log_debug("Refreshing all "+ids.size+" queries")
           for (id <- ids) doRefreshQuery(id, false)
+        case CheckStatus =>
+          client.checkStatus(server+"/status") match {
+            case None => ui ! ServerNotResponding
+            case Some(true) => ui ! ServerStatusOk
+            case Some(false) => ui ! ServerError("Status check failed")
+          }
+          
         case _ =>
           log_warn("Unknown message type")
       }

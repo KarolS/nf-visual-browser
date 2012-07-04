@@ -1,40 +1,32 @@
 /*
  * Copyright (c) 2011,2012 Karol M.Stasiak <karol.m.stasiak@gmail.com>
- * This software is licenced under European Union Public Licence v.1.1 or later
+ * This software is licensed under European Union Public Licence v.1.1 or later
  */
 
 package pl.umk.mat.stasiu88.nfserver.input
 import pl.umk.mat.stasiu88.nfserver.Utils._
-/*ivate static final int init = 0;
-private static final int copy_match = 1;
-private static final int eof_found = 2;
-private static final int first_literal_run = 3;
-private static final int match = 4;
-private static final int match_done = 5;
-private static final int match_next = 6;
-private static final int input_overrun = 7;
-private static final int output_overrun = 8;
-private static final int lookbehind_overrun = 9;
-*/
 
-// highly experimental Lzo1X decompression implementation
-
+/** 
+ * Highly experimental Lzo1X decompression implementation.
+ * <br>
+ * Wysoce eksperymentalna implementacja algorytmu Lzo1X.
+ */
 class Lzo {
   val result = new Array[Byte](1048576) //per-thread object pool //TODO: size?
-  def decompress(compressed: Array[Byte]) = {
+  def decompress(compressed: Array[Byte]):Array[Byte] = {
     var inptr = 0
     var outptr = 0
     var outlen = 0
     var m = 0
     var t = 0
-    def in(index: Int) = compressed(index)&0xff
-    def out(index: Int) = result(index)&0xff
-    def verbatim(count: Index) = count times {
+    @inline def in(index: Int) = compressed(index)&0xff
+    @inline def out(index: Int) = result(index)&0xff
+    @inline def verbatim(count: Int) = count times {
       result(outptr) = compressed(inptr)
       outptr += 1
       inptr +=1
     }
-    def duplicate(count: Index) = count times {
+    @inline def duplicate(count: Int) = count times {
       result(outptr) = result(m)
       outptr += 1
       m +=1
@@ -83,7 +75,7 @@ class Lzo {
               state = 4
               pre = false            
             }
-            m = out_ptr - (1 + 0x0800) -
+            m = outptr - (1 + 0x0800) -
                 (t >> 2) -
                 (in(inptr) << 2)
             inptr += 1
@@ -124,7 +116,7 @@ class Lzo {
                   inptr += 2
                 }
                 else if (t>=16) {
-                  m = ouptr - ((t&8)<<11)
+                  m = outptr - ((t&8)<<11)
                   t &= 7
                   if(t==0){
                     while(in(inptr)==0){
@@ -170,6 +162,6 @@ class Lzo {
         } while (outer)
       }//outer
     }
-    return result
+    result
   }
 }
