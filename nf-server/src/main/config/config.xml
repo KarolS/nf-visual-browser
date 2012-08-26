@@ -1,5 +1,5 @@
 <config>
     <port>8888</port>
-    <datasource><directory>/opt/results-05-22</directory></datasource>
+    <datasource><directory>/opt/nf</directory></datasource>
     <authzsource><allow-all/></authzsource>
 </config>

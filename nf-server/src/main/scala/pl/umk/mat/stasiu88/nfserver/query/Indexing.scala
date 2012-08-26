@@ -12,13 +12,13 @@ import org.joda.time._
 import org.joda.time.format.DateTimeFormat
 
 /**
- * Assigns indexes to a flow.
+ * Assigns indices to a flow.
  * <br>
  * Przypisuje indeksy przepływowi.
  */
 sealed trait Indexing {
   /**
-   * Assigns a list of indexes to a flow.
+   * Assigns a list of indices to a flow.
    * <br>
    * Przypisuje przepływowi listę indeksów.
    */
@@ -35,6 +35,7 @@ abstract class HostnameIndexing extends Indexing {
   def decode(q:Query, index: List[Int]) = index match {
     case 0 :: h :: xs => "from " + StringCache(h).name -> xs
     case 1 :: h :: xs => "to " + StringCache(h).name -> xs
+    case _ => throw new RuntimeException("Broken indices")
   }
 }
 case object SrcHostnameIndex extends HostnameIndexing {
@@ -93,6 +94,7 @@ abstract class IPIndexing extends Indexing {
     case 0 :: 6 :: ip0 :: ip1 :: ip2 :: ip3 :: xs => "from " + IP6Addr(ip0,ip1,ip2,ip3).toString -> xs
     case 1 :: 6 :: ip0 :: ip1 :: ip2 :: ip3 :: xs => "to " + IP6Addr(ip0,ip1,ip2,ip3).toString -> xs
     //TODO
+    case _ => throw new RuntimeException("Broken indices")
   }
 }
 /**
@@ -149,7 +151,7 @@ case class IPNotInSubnetIndex(subnet: Subnet) extends IPIndexing {
 }
 
 /**
- * Assigns to a flow indexes that are concatenations of several indexes.
+ * Assigns to a flow indices that are concatenations of several indices.
  * <br>
  * Przypisuje przepływowi indeksy, będące konkatenacją kilku indeksów. 
  */
@@ -165,7 +167,7 @@ case object NilIndex extends ListOfIndexing {
   override def toString() = "()"
 }
 /**
- * Assigns to a flow a list of indexes, 
+ * Assigns to a flow a list of indices, 
  * each of them being a concatenation of some index assigned by head and some index assigned by tail.
  * <br>
  * Przypisuje przepływowi listę indeksów,
@@ -191,6 +193,7 @@ abstract class PortIndexing extends Indexing {
     case 2 :: xs      => "no port" -> xs
     case 0 :: p :: xs => "from port " + p -> xs
     case 1 :: p :: xs => "to port " + p -> xs
+    case _ => throw new RuntimeException("Broken indices")
   }
 }
 /**

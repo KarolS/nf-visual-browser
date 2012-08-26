@@ -4,6 +4,7 @@
  */
 
 package pl.umk.mat.stasiu88.nfserver
+import java.net.InetAddress
 
 /**
  * Abstract class representing IP address.
@@ -56,7 +57,34 @@ case class IP4Addr(value: Int) extends Addr {
  * Adres IPv6.
  */
 case class IP6Addr(part0: Long, part1: Long) extends Addr {
-  //TODO: override def toString = ...
+  override def toString = {
+    val parts = Array(
+        part0>>>48,
+        part0>>>32,
+        part0>>>16,
+        part0,
+        part1>>>48,
+        part1>>>32,
+        part1>>>16,
+        part1
+        ).map(_.toShort)
+    var prefix=0
+    var suffix=8
+    while(prefix<8 && parts(prefix)!=0) prefix+=1
+    while(suffix>0 && parts(suffix-1)!=0) suffix-=1
+    val full = (prefix>=suffix) || {
+      (prefix until suffix).exists(_!=0)
+    }
+    val strings = parts.map{element => 
+      val toolong = element.toInt.toHexString
+      if(toolong.length>4)toolong.substring(toolong.length-4)else toolong
+    }
+    if(full){
+      strings.mkString(":")
+    } else{
+      strings.take(prefix).mkString(":")+"::"+strings.drop(suffix).mkString(":")
+    }
+  }
   def toIntList = List(6, (part0>>>32).toInt, (part0).toInt, (part1>>>32).toInt, (part1).toInt)
 }
 object IP4Addr {

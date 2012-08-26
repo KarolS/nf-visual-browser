@@ -110,6 +110,7 @@ class DefaultAgent extends Agent{
           ui ! InvalidCredentials
         case 503 => 
           ui ! JobUnknown(id)
+        case 504 => ui ! JobTimeout(id)
         case i => 
           val err = i.toString +
             "\n" +
@@ -176,6 +177,7 @@ class DefaultAgent extends Agent{
           ui ! JobInterrupted(id)
         case 401 => ui ! InvalidCredentials
         case 503 => ui ! JobUnknown(id)
+        case 504 => ui ! JobTimeout(id)
         case i =>
           val err = i.toString +
             "\n" +

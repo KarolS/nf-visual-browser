@@ -199,7 +199,7 @@ object Chart {
     result
   }
   /**
-   * Returns 0 if no indexes were used in a query, 
+   * Returns 0 if no indices were used in a query, 
    * 1 if each datapoint has exactly one index, 
    * and 2 otherwise.
    * <br>
@@ -226,7 +226,7 @@ object Chart {
     return 1
   }
   /**
-   * Converts a parsed bucket to a chart model, given the approximate number of indexes and periods.
+   * Converts a parsed bucket to a chart model, given the approximate number of indices and periods.
    * <br>
    * Konwertuje sparsowaną kategorię do modelu wykresu, w oparciu o przybliżoną liczbę indeksów i okresów.
    */
@@ -247,9 +247,9 @@ object Chart {
         case (2,1) =>
           if(bucket.periods.head.datapoints.size==0) new EmptyChart("No data")
           else {
-            val indexes = bucket.periods.head.datapoints.map{_.index}.toArray
+            val indices = bucket.periods.head.datapoints.map{_.index}.toArray
             val values = bucket.periods.head.datapoints.map{_.value}.toArray
-            new Table2(indexes,values)
+            new Table2(indices,values)
           }
         case (0,2) =>
           //val periods = bucket.periods.map{_.timestamp}.sortWith(periodSorter _).toArray
@@ -258,9 +258,9 @@ object Chart {
           new GraphableTable2(periods,values)
         case (1,2) =>
           val periods = bucket.periods.map{_.timestamp}.sortWith(periodSorter _).toArray
-          val indexes = periodMapper[String](periods,bucket.periods,null)(_.datapoints.headOption.map{_.index}.orNull)
+          val indices = periodMapper[String](periods,bucket.periods,null)(_.datapoints.headOption.map{_.index}.orNull)
           val values = periodMapper(periods,bucket.periods,0L)(_.datapoints.headOption.map{_.value}.getOrElse(0L))
-          new Table3(periods, indexes, values)
+          new Table3(periods, indices, values)
         case (2,2) =>
           val periods = bucket.periods.sortWith{(p1, p2)=>
             periodSorter (p1.timestamp,p2.timestamp)
@@ -326,7 +326,7 @@ object Chart {
   
   /**
    * Converts parsed results for one statitics into a set of chart models, 
-   * given the approximate number of indexes and periods.
+   * given the approximate number of indices and periods.
    * <br>
    * Konwertuje sparsowane wyniki dla jednej statystyki na zestaw modeli wykresów,
    * w oparciu o przybliżoną liczbę indeksów i okresów.

@@ -93,6 +93,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
             }
             reply match {
               case whr: WithHttpResponse => response.setStatus(whr.httpResponse)
+              case _ => ()
             }
             reply match {
               case Ok(result, originalQuery) => result.toXml(Query(originalQuery)).toString
@@ -110,6 +111,7 @@ class HttpHandler(manager: Manager) extends AbstractHandler with Logging{
             val reply = manager !? (1000,HCancelJob(id, Credentials(username,password))) getOrElse GatewayTimeout
             reply match {
               case whr: WithHttpResponse => response.setStatus(whr.httpResponse)
+              case _ => ()
             }
             reply match {
               case Accepted(id) => id.name

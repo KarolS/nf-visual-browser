@@ -47,25 +47,36 @@ class FileDataSource(val file: File) extends DataSource{
   def firstSeen = vfirstSeen
   def lastSeen = vlastSeen
   
-  private def readHeader(q:Query):Option[DataFile]={
-    if(assumeValid && q.timeWindow.overlapsWith(firstSeen,lastSeen)){
-      synchronized {
-        try{
-          val data = new DataFile(filename)
-          val vfirstSeen = data.firstSeen
-          val vlastSeen = data.lastSeen
-          FileRangeCache.update(filename, firstSeen, lastSeen)
-          read = true
-          return Some(data)
-        }catch{
-          case e:Exception =>
-            e.printStackTrace()
-            assumeValid = false
-            return None
+  private def readHeader[A](q:Query)(block: Option[DataFile]=>Option[A]):Option[A] = {
+    val optData = 
+      if(assumeValid && q.timeWindow.overlapsWith(firstSeen,lastSeen)){
+        synchronized {
+          var data:DataFile = null
+          try{
+            data = new DataFile(filename)
+            val vfirstSeen = data.firstSeen
+            val vlastSeen = data.lastSeen
+            FileRangeCache.update(filename, firstSeen, lastSeen)
+            read = true
+            Some(data)
+          }catch{
+            case e:Exception =>
+              e.printStackTrace()
+              assumeValid = false
+              if(data ne null) data.close
+              None
+          }
         }
-      }
+      }else None
+    try{
+      block(optData)
+    } catch {
+      case e:Exception =>
+        e.printStackTrace()
+        None
+    } finally {
+      optData.foreach(_.close)
     }
-    None
   }
   
   val allacceptingFilters = Set[SplitFilter](
@@ -76,22 +87,20 @@ class FileDataSource(val file: File) extends DataSource{
   //TODO: check if optimal
   override def getQuickResult(q:Query):Option[Result]={
     //TODO: optimize for pure TCP/UDP/ICMP queries
-    val data = readHeader(q) match {
-      case Some(d) => d
+    readHeader(q) {
       case None => return None
-    }
-    if(!assumeValid) return None
-    if(!q.timeWindow.contains(firstSeen,lastSeen)) return None
-    if(!allacceptingFilters.contains(q.splitfilter)) return None
-    if(q.statistic.backupPeriod /== EachAlways) return None
-    if(q.statistic.indexing /== NilIndex) return None
-    q.statistic.sumOver foreach{ 
-      case Bytes => ()
-      case Packets => ()
-      case Flows => ()
-      case _ => return None
-    }
-    try{
+      case Some(data) =>
+      if(!assumeValid) return None
+      if(!q.timeWindow.contains(firstSeen,lastSeen)) return None
+      if(!allacceptingFilters.contains(q.splitfilter)) return None
+      if(q.statistic.backupPeriod /== EachAlways) return None
+      if(q.statistic.indexing /== NilIndex) return None
+      q.statistic.sumOver foreach{ 
+        case Bytes => ()
+        case Packets => ()
+        case Flows => ()
+        case _ => return None
+      }
       val flows = data.flowCount
       val bytes = data.byteCount
       val packets = data.packetCount
@@ -101,26 +110,18 @@ class FileDataSource(val file: File) extends DataSource{
         case Flows => Map(0L->Map(List[Int]()->flows))
         case _ => return None
       }:_*), 1, q.statistic.sumOver.length))
-    } catch {
-      case e:Exception =>
-        e.printStackTrace()
-        None
-    }
-    finally{
-      try{
-        data.close()
-      } catch {case _ => }
     }
   }
   
   def foreach(q: Query)(f: Flow=>Unit){
-    readHeader(q) map {data =>
+    readHeader(q) { 
+      case None => None
+      case Some(data) => 
       if(assumeValid && q.timeWindow.overlapsWith(firstSeen,lastSeen)){
         data foreach f
       }
-      try{
-        data.close()
-      } catch {case _ => }
+      None
     }
+    ()
   }
 }

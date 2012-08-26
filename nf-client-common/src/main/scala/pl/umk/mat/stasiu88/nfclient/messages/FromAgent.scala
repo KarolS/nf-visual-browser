@@ -62,6 +62,13 @@ case class JobUnknown(id: Symbol) extends JobInfo
  * <br>
  * Komunikat od agenta do UI.
  */
+case class JobTimeout(id: Symbol) extends JobInfo
+
+/**
+ * A message from agent to UI.
+ * <br>
+ * Komunikat od agenta do UI.
+ */
 case object InvalidCredentials
 
 /**

@@ -253,7 +253,7 @@ class NewQueryTab extends JPanel {
   def buildTopPartOfQuery: Validation[NonEmptyList[String],String] = {
     getIndexableFields map {
       case Nil => ""
-      case indexes => "top "+topCountField.getValue+" by "+indexes.mkString(", ")
+      case indices => "top "+topCountField.getValue+" by "+indices.mkString(", ")
     }
   }
   

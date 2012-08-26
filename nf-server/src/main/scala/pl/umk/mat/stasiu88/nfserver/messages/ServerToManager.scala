@@ -63,8 +63,8 @@ trait WithHttpResponse {
   def httpResponse: Int
 } 
 
-case class GatewayTimeout extends WithHttpResponse {
-  def httpResponse = SC_GATEWAY_TIMEOUT //502
+case class GatewayTimeout() extends WithHttpResponse {
+  def httpResponse = SC_GATEWAY_TIMEOUT //504
 }
 
 case class Unauthorized() extends WithHttpResponse {

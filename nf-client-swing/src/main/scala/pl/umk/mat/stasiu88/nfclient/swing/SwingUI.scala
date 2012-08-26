@@ -32,7 +32,9 @@ class SwingUI extends BaseUI{
   val tabMap = mutable.Map[Symbol, OldQueryTab]()
   def reactToError(id:Symbol, error: String){
     errorMessage("For query id="+id.name+"\n"+error)
-    //processResult(id, FailedItem(error))
+  }
+  def reactToTimeout(id:Symbol){
+    errorMessage("Timeout for query id="+id.name)
   }
   def reactToError(error: String){
     errorMessage(error)

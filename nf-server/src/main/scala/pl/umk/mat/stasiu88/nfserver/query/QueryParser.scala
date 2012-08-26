@@ -8,6 +8,7 @@ import scala.util.parsing.combinator.RegexParsers
 import pl.umk.mat.stasiu88.nfserver.Addr
 import pl.umk.mat.stasiu88.nfserver.Protocols._
 import pl.umk.mat.stasiu88.nfserver.Subnet
+import pl.umk.mat.stasiu88.nfserver.NamedSubnet
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{Map=>MMap}
 import org.joda.time._
@@ -148,7 +149,8 @@ class QueryParser extends RegexParsers {
   def subnet: Parser[Subnet] =
     ip ~ "/" ~ ip ^^ { case sn ~ _ ~ m => Subnet(sn, m) } |
       ip ~ "/" ~ integer ^^ { case sn ~ _ ~ m => Subnet(sn, m) } |
-      ip ^^ { Subnet(_) } //TODO: identyfikatory
+      ip ^^ { Subnet(_) } |
+      subnetid ^^ { NamedSubnet(_) }
 
   def ipfilter: Parser[Filter] =
     ("ipv4" | "ip4") ^^^ IP4Filter |

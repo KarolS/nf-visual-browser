@@ -52,6 +52,7 @@ trait BaseUI extends UI {
   
   def refreshUI(changedId: Symbol):Unit
   def reactToError(id:Symbol, error: String):Unit
+  def reactToTimeout(id:Symbol):Unit
   def reactToError(error: String):Unit
   def reactToInvalidCredentials():Unit
   def reactToServerBusy():Unit
@@ -76,6 +77,8 @@ trait BaseUI extends UI {
         reactToError(id,err)
       case ServerError(err) =>
         reactToError(err)
+      case JobTimeout(id) =>
+        reactToTimeout(id)
       case InvalidCredentials =>
         reactToInvalidCredentials()
       case ServerBusy =>

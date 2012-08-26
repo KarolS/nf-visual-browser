@@ -10,9 +10,9 @@ package pl.umk.mat.stasiu88.nfclient.chart
  * <br>
  * Model wykresu dla danych, które najlepiej pasują do trójkolumnowej tabeli.
  */
-class Table3(periods: Array[String], indexes: Array[String], values: Array[Long])extends Chart{
+class Table3(periods: Array[String], indices: Array[String], values: Array[Long])extends Chart{
   def length = periods.length
-  def index(i: Int) = indexes(i)
+  def index(i: Int) = indices(i)
   def period(i: Int) = periods(i)
   def get(i: Int) = values(i)
 }
